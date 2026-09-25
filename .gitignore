@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Checkpoints and data land here once released; keep large artifacts out of git.
+*.ckpt
+*.pth
+*.safetensors
+*.zarr/
+outputs/
+wandb/
+
+.DS_Store
