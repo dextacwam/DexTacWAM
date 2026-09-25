@@ -1,14 +1,14 @@
 <div align="center">
 
-# DexTacWAM: A Visuo-Tactile World-Action Model for Dexterous Manipulation
+# [DexTacWAM: A Visuo-Tactile World-Action Model for Dexterous Manipulation](https://dextacwam.github.io/)
 
-[Haoran Yuan](https://dextacwam.github.io/)<sup>1,‡</sup> &nbsp;
-Zekai Wang<sup>2</sup> &nbsp;
-Boning Shao<sup>2</sup> &nbsp;
-Haoran Lu<sup>3</sup> &nbsp;
-Trevor Darrell<sup>2</sup> &nbsp;
-Ismini Lourentzou<sup>1,†</sup> &nbsp;
-Wei Zhan<sup>2,†</sup>
+[Haoran Yuan](https://scholar.google.com/citations?user=PzdigUMAAAAJ)<sup>1,‡</sup> &nbsp;
+[Zekai Wang](https://scholar.google.com/citations?user=Dngm3CYAAAAJ)<sup>2</sup> &nbsp;
+[Boning Shao](https://scholar.google.com/citations?user=tlOWnSIAAAAJ)<sup>2</sup> &nbsp;
+[Haoran Lu](https://luhr2003.github.io/)<sup>3</sup> &nbsp;
+[Trevor Darrell](https://people.eecs.berkeley.edu/~trevor/)<sup>2</sup> &nbsp;
+[Ismini Lourentzou](https://isminoula.github.io/)<sup>1,†</sup> &nbsp;
+[Wei Zhan](https://scholar.google.com/citations?user=xVN3UxYAAAAJ)<sup>2,†</sup>
 
 <sup>1</sup>University of Illinois Urbana-Champaign &nbsp;
 <sup>2</sup>University of California, Berkeley &nbsp;
@@ -86,7 +86,7 @@ hand-level latents, retaining 89.4% of pre-fusion contact recall while enabling
 ## Citation
 
 ```bibtex
-@article{yuan2026dextacwam,
+@article{dextacwam2026,
   title   = {DexTacWAM: A Visuo-Tactile World-Action Model for Dexterous Manipulation},
   author  = {Yuan, Haoran and Wang, Zekai and Shao, Boning and Lu, Haoran and
              Darrell, Trevor and Lourentzou, Ismini and Zhan, Wei},
