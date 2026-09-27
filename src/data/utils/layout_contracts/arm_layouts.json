@@ -1,0 +1,113 @@
+{
+ "contract_version": 1,
+ "description": "Single source of truth for DexTacWAM arm/hand action+state index layouts. Consumed by training, the policy server and dataset conversion alike. Every consumer asserts its local layout objects match this file and records contract_version in provenance. Slices are [start, end) half-open, in flat-vector order.",
+ "layouts": {
+  "bimanual": {
+   "abs_action_dim": 150,
+   "action_poses": [
+    [
+     118,
+     134
+    ],
+    [
+     134,
+     150
+    ]
+   ],
+   "arm_joints": [
+    60,
+    74
+   ],
+   "arms": [
+    "left",
+    "right"
+   ],
+   "force": [
+    0,
+    60
+   ],
+   "hand": [
+    74,
+    118
+   ],
+   "name": "bimanual",
+   "rel_action_dim": 136,
+   "rel_poses": [
+    [
+     118,
+     127
+    ],
+    [
+     127,
+     136
+    ]
+   ],
+   "state_dim": 90,
+   "state_hands": [
+    [
+     14,
+     36
+    ],
+    [
+     36,
+     58
+    ]
+   ],
+   "state_poses": [
+    [
+     58,
+     74
+    ],
+    [
+     74,
+     90
+    ]
+   ]
+  },
+  "right_only": {
+   "abs_action_dim": 75,
+   "action_poses": [
+    [
+     59,
+     75
+    ]
+   ],
+   "arm_joints": [
+    30,
+    37
+   ],
+   "arms": [
+    "right"
+   ],
+   "force": [
+    0,
+    30
+   ],
+   "hand": [
+    37,
+    59
+   ],
+   "name": "right_only",
+   "rel_action_dim": 68,
+   "rel_poses": [
+    [
+     59,
+     68
+    ]
+   ],
+   "state_dim": 45,
+   "state_hands": [
+    [
+     7,
+     29
+    ]
+   ],
+   "state_poses": [
+    [
+     29,
+     45
+    ]
+   ]
+  }
+ }
+}
