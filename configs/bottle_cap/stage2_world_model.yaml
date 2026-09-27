@@ -1,0 +1,524 @@
+# =============================================================================
+# Stage 2 Phase 2 (B2) -- World Model (bimanual chip pick: WITH_WRIST V=3
+#                         head + L/R wrist + V=2 tactile gelsight fingers,
+#                         v0d adapter, PROJECTOR BYPASSED)
+#                         reference run -- 20260724_unscrew_bottle_cap_v2
+#                         RELATIVE_EEF_ROT6D folder (0718_*_eef_relative)
+# =============================================================================
+# Derived structurally from this corpus family's existing siblings:
+#   1. video_model_0514_erase_whiteboard_with_wrist_tactile_v0d_proj_bypass.yaml
+#      (sibling V=3 head+wrists + V=2 tactile B2; view-count / max_view=5 /
+#       recipe template -- v0d adapter wiring, optim, DeepSpeed, val_splits).
+#   2. video_model_0730_unscrew_bottle_cap_v2_no_wrist_tactile_v0d_proj_bypass.yaml
+#      (paired no_wrist V=1 chip B2; this file is that yaml with the no_wrist
+#       camera surgery REVERSED -- valid_cam bumped back to 3 cams + max_view:5).
+#   3. video_model_0718_pick_cube_handover_no_wrist_tactile_v0d_proj_bypass
+#      .yaml (the relative-labels precedent: a world_model_only config that
+#       carries action_type=relative_eef_rot6d + action_space=eef so it lives
+#       in the *_eef_relative folder and reads the SAME relative stats file as
+#       its paired action model -- see note (C) below).
+#
+# Surgical axes vs the no_wrist chip B2 (item 2 above):
+#   A. CORPUS: unchanged (20260724_unscrew_bottle_cap_v2). Verified parquet schema
+#      (meta/info.json) exposes all three RGB cams + tactile:
+#        head_img / left_wrist_img / right_wrist_img : (192,256,3) uint8
+#        tactile                                     : (2, 5, 192, 256) uint8
+#        state                                       : (90,) float32
+#        actions                                     : (150,) float32
+#      so the wrist views this config re-enables are physically present.
+#
+#   B. CAMERAS V=1 -> V=3 (with_wrist): valid_cam at 3 yaml locations is bumped
+#      from ['head_img'] back to ['head_img','left_wrist_img','right_wrist_img'].
+#      V_full = V_visual(3) + V_tactile(2) = 5, so `max_view: 5` is ADDED to
+#      diffusion_model.config (extends the view_embed table beyond the default
+#      3). This is the exact inverse of the no_wrist surgery.
+#
+#   C. RELATIVE LABELS (cosmetic; WM is action-agnostic): action_type is set to
+#      relative_eef_rot6d + action_space=eef, and stat_file points at the fresh
+#      0718 relative stats. B2 trains with return_action=false + add_state=False,
+#      so the DiT body NEVER sees action/state -- the dataset still relativizes
+#      the action window and normalizes it with {domain}_relative_eef, but that
+#      tensor is DISCARDED here. This keeps the WM co-located with its paired B3
+#      action model in the *_eef_relative folder and reading one stats file.
+#      The phase-aware guard in tactile_dit_trainer._validate_action_config
+#      SKIPS the 226-wide action-expert dim checks for world_model_only phases.
+#
+#   D. WM warmstart: stays on GE-base (no prior chip-corpus tactile WM exists).
+#      Mirrors zekai's original recipe for fresh-corpus B2 (cube/488/erase).
+#
+#   E. Paths/keys: stat_file, cache_dir (unscrew_bottle_cap_v2_with_wrist_v1), output_dir,
+#      val_splits.<name> retargeted to the with_wrist / relative variants. The
+#      relative stat_file at
+#        configs/ltx_model/0730_unscrew_bottle_cap_v2_with_wrist_eef_relative/
+#          20260724_unscrew_bottle_cap_v2_relative_stats.json
+#      is NEW (compute via
+#        TASK=unscrew bash scripts/calc_stats_relative_eef_rot6d.sh
+#      before launching; it emits {domain}_relative_eef (136) + _state_eef (90)
+#      plus the absolute _eef/_delta_eef blocks, numerically identical to the
+#      canonical _joint blocks).
+#
+# Output: B2 trainer ckpt at step 80000 (DiT safetensors + projector.pt),
+#         consumed by the paired with_wrist RELATIVE B3 yaml at
+#           configs/ltx_model/0730_unscrew_bottle_cap_v2_with_wrist_eef_relative/
+#             action_model_0730_unscrew_bottle_cap_v2_with_wrist_eef_relative_wm_bypass_shared_rmsnorm_long50000.yaml
+#         Fill the FILL_ME placeholder in that yaml's
+#         diffusion_model.model_path with this run's <TS>/step_<N> once a step
+#         ckpt (typically step_30000+) is on disk.
+# -----------------------------------------------------------------------------
+# Recipe (mirrors erase / cube / 488 siblings):
+#   - WM warmstart   : GE-base (GE_base_fast_v0.1.safetensors)
+#   - Stage-1 adapter: v0d `best_recall_post/model.pt` (byte-identical to erase)
+#   - tactile_vae.config.disable_projector: true (forward bypassed)
+#   - GE-aligned     : batch_size=16, caption_dropout_p=0.06,
+#                      noise_to_first_frame=0.1, lr_warmup_steps=1000
+#   - train_steps    : 80000
+#
+# pose_stats: REUSES 488 pose_stats (data/stats/diverse_488/pose_stats.json)
+#   per doc gotcha #6 -- Stage-1 v0d was trained on the 488 pose distribution,
+#   so the PoseEncoder expects that normalization regardless of corpus.
+#
+# Trainable: DiT (every param except action_*; GE 'video_only' filter)
+# Frozen   : TactileProjector (from_scratch but bypassed; weights never read),
+#            v0d adapter (tactile VAE), LTX VAE, T5 enc/tok
+#
+# Loss     : video co-denoise loss split per-modality
+#              total = lambda_visual * loss_visual + lambda_tactile * loss_tactile
+#            Both 1.0. Read off from `[val/20260724_unscrew_bottle_cap_v2_val] over .* loss_visual=... loss_tactile=...`.
+#
+# Val splits:
+#   - 20260724_unscrew_bottle_cap_v2_val : PRIMARY (in-corpus holdout, episodes [86..95])
+#   (No cross-corpus probe; chip shares dims 90/150 only with erase, but
+#    cross-corpus WM val isn't part of the paired B3 wiring.)
+#
+# Run as (4xH200 NVL, effective batch = 4 * 16 = 64):
+#   bash scripts/launch_b2_world_model_0730_unscrew_bottle_cap_v2_with_wrist_v0d_proj_bypass_80k.sh
+#
+# Wall-clock: V=3 visual + V=2 tactile (V_full=5) tracks the with_wrist erase
+# sibling at ~5s/it -> 80k steps ~= 110 h on 4xH200 NVL. (The no_wrist V=1 chip
+# sibling at V_full=3 was ~3.3s/it; adding the two wrist views here is
+# correspondingly slower.)
+#
+# Output  : full Stage-2 ckpt at step 80000 (DiT safetensors + projector.pt).
+# =============================================================================
+
+model_name: 'ltx_train'
+is_i2v: True
+report_to: None
+tracker_name: ltx_trainer
+
+logging_dir: logs
+output_dir: outputs/stage2_phase2_world_model_0730_unscrew_bottle_cap_v2_with_wrist_tactile_v0d_proj_bypass
+pretrained_model_name_or_path: pretrained_models/ltx_video
+
+###
+# Use DexVTAMDataset (libero fork + tactile column). MUST be DexVTAMDataset
+# whenever use_tactile_views=true; libero's CustomLeRobotDataset does NOT yield
+# batch['tactile'].
+train_data_class_path: data/dex_vtam_dataset.py
+train_data_class: DexVTAMDataset
+val_data_class_path: data/dex_vtam_dataset.py
+val_data_class: DexVTAMDataset
+
+###
+tokenizer_class_path: transformers
+tokenizer_class: T5Tokenizer
+textenc_class_path: transformers
+textenc_class: T5EncoderModel
+vae_class_path: models/ltx_models/autoencoder_kl_ltx.py
+vae_class: AutoencoderKLLTXVideo
+diffusion_model_class_path: models/ltx_models/transformer_ltx_multiview.py
+diffusion_model_class: LTXVideoTransformer3DModel
+diffusion_scheduler_class_path: diffusers
+diffusion_scheduler_class: FlowMatchEulerDiscreteScheduler
+
+pipeline_class_path: models/pipeline/custom_pipeline.py
+pipeline_class: CustomPipeline
+
+# -----------------------------------------------------------------------------
+# TactileDiTTrainer dispatcher (Stage 2 phase 2)
+# -----------------------------------------------------------------------------
+phase: world_model_only
+use_tactile_views: true
+train_mode: 'video_only'
+
+# -----------------------------------------------------------------------------
+# Per-modality loss weighting (Stage 2).
+# Both 1.0: matches the 488 sibling so per-corpus per-modality losses are
+# directly comparable across the two paired runs.
+# -----------------------------------------------------------------------------
+loss:
+  lambda_visual:  1.0
+  lambda_tactile: 1.0
+
+# -----------------------------------------------------------------------------
+# v0d Stage-1 adapter (FingerSetTransformerAdapter + pose injection +
+# TimeSformer post-adapter; frozen). Latent-channels / spatial dims MUST
+# match the v0d train-time config (else the DiT-side latent stack
+# concatenation will mis-shape). The 4 v0d kwargs at the bottom are
+# additionally required to be byte-identical to the Stage-1 v0d yaml so
+# the strict=False ckpt load picks up every pose_encoder.* / timesformer.*
+# weight; the Stage-2 dispatcher's [v0d-gate1] LOAD log block fail-louds
+# if `adapter_use_pose_injection`/`adapter_use_timesformer` are True but
+# the ckpt has no matching weights.
+# -----------------------------------------------------------------------------
+tactile_vae:
+  # Production ckpt choice: best_recall_post @ step 53000 of the v0d full
+  # run (2026_05_20_06_52_55). Identical ckpt + rationale as the 488 sibling
+  # (recall 6.7% > MSE 4%; v0d's design target is contact recall, not MSE).
+  # The Stage-2 dispatcher's [v0d-gate1] LOAD log block prints alpha_pose /
+  # alpha_temp / pose_encoder / timesformer shapes on startup; inspect that
+  # to confirm the right ckpt loaded.
+  model_path: outputs/stage1_lite_v0d_full/2026_05_20_06_52_55/checkpoints/best_recall_post/model.pt
+  config:
+    adapter_kind: finger_set_transformer
+    latent_channels: 128
+    num_fingers: 5
+    spatial_h: 6
+    spatial_w: 8
+    num_heads: 8
+    adapter_n_layers: 3
+    adapter_ffn_dim: 1024
+    adapter_dropout: 0.0
+    use_finger_embed: true
+    use_pos_query: true
+    adapter_residual: weighted_mean
+    gray_to_rgb_init: ones_repeat
+    latent_mode: mean
+
+    # ----- v0d additions ----------------------------------------------
+    # Pose injection (Option D, alpha-zero-init):
+    #   q = (hand_query + alpha_pose * PoseEncoder(hand_pose)) + pos_embed[h,w]
+    adapter_use_pose_injection: true
+    adapter_pose_dim: 22
+
+    # TimeSformer post-adapter (Path 2, alpha-zero-init):
+    #   hand_grid = hand_grid + alpha_temp * TimeSformer(hand_grid)
+    # adapter_timesformer_ffn_dim MUST be 512 to match Stage-1 v0d training
+    # (configs/tactile_model/stage1_lite_visual_vae_adapter_v0d_full.yaml
+    # line 194). Set explicitly here (the cube v0d dryrun yaml omitted this
+    # key and relied on an implicit default; a future default change would
+    # silently invalidate the warmstart).
+    adapter_use_timesformer: true
+    adapter_timesformer_num_blocks: 2
+    adapter_timesformer_num_heads: 8
+    adapter_timesformer_ffn_dim: 512
+
+    # Finger dropout (regularization). Off for v1 v0d Stage-2; matches the
+    # Stage-1 v0d yaml and the 488 sibling.
+    adapter_finger_dropout: 0.0
+
+    # Projector-bypass flag (matches 488 sibling). When true,
+    # `runner/tactile_dit_trainer.py::_encode_tactile_split` skips the
+    # TactileProjector forward and passes `tac_latent_pre` straight to the
+    # DiT view stack (tac_latent := tac_latent_pre, SAME shape because the
+    # projector is latent_dim -> latent_dim in shape, just learnable in
+    # content). The projector module is still constructed (see `projector:`
+    # block below) but its forward is never called and its parameters are
+    # never read by the loss. The dispatcher emits a single WARNING
+    # "[E_proj_identity] tactile_vae.config.disable_projector = true" so
+    # the bypass is unmistakable in the log header.
+    disable_projector: true
+
+# -----------------------------------------------------------------------------
+# TactileProjector (constructed but BYPASSED in this run). Cube has no v0d
+# B1 projector ckpt (the only v0d B1 ckpt that exists is for the 488 corpus,
+# (projector.warmstart_ckpt is null + from_scratch=true here; bypassed at runtime),
+# so we initialize from scratch. Because `disable_projector=true` skips the
+# projector forward, its weights are never consulted -- from_scratch +
+# freeze_in_wm_phase are doubly moot but kept for schema symmetry with the
+# 488 sibling and for save-side ckpt parity.
+# -----------------------------------------------------------------------------
+projector:
+  latent_dim: 128       # MUST equal tactile_vae.config.latent_channels
+  hidden_dim: 256
+  num_views: 2          # V_hand: left + right
+  warmstart_ckpt: null
+  from_scratch: true              # no cube-v0d B1 ckpt; bypass makes this moot
+  freeze_in_wm_phase: true        # B2 v1: kept for schema symmetry with 488 (no-op given bypass)
+  freeze_in_action_phase: true    # Stage 3 default; kept for yaml symmetry
+
+# -----------------------------------------------------------------------------
+# Optimizer (separate LRs for DiT vs projector groups).
+# -----------------------------------------------------------------------------
+optim:
+  lr_dit:       3.0e-4   # DiT body fine-tunes on top of GE pretrained weights
+  lr_projector: 3.0e-4   # ignored when projector.freeze_in_wm_phase=true (and also no-op because disable_projector=true)
+  train_steps:  80000    # matches 488 sibling for paired comparison (bumped from 50k -> 80k 2026-05-25)
+
+# -----------------------------------------------------------------------------
+# GE training-loop knobs
+# -----------------------------------------------------------------------------
+return_action: false
+return_video: true
+action_loss_scale: 1.0
+
+# total training step is decided by the minimum of train_steps and
+# train_epochs * steps_per_epoch. We let `optim.train_steps` (80000) be the
+# binding constraint (matches the 488 sibling).
+train_steps: 1000000
+train_epochs: 10000
+steps_to_save: 5000
+steps_to_log: 200
+steps_to_val:  2000
+
+mixed_precision: bf16
+allow_tf32: False
+
+# timeout, seconds
+nccl_timeout: 600
+seed: 42
+
+# vae
+enable_slicing: True
+enable_tiling: True
+
+add_state: False
+caption_dropout_p: 0.06
+
+# dataloader
+# Per-process batch_size; on 4xH200 NVL the effective batch is 4*16=64.
+# Phase 2 has the HEAVIEST step (DiT trainable + full activation grads).
+# gradient_checkpointing=True is essential to fit bs=16 on 143GB H200.
+batch_size: 16
+dataloader_num_workers: 12
+pin_memory: True
+prefetch_factor: 8              # cover slow-batch latency vs round-robin period
+persistent_workers: True        # don't kill workers between epochs
+
+gradient_checkpointing: True
+noise_to_first_frame: 0.1
+
+# Optimizer Config (top-level: GE base-trainer expectations; primary_lr will
+# be overridden by `optim.lr_dit` in prepare_optimizer)
+optimizer: adamw
+lr: 3.0e-4              # mirrors optim.lr_dit (used as fallback only)
+beta1: 0.9
+beta2: 0.95
+beta3: 0.999
+epsilon: 1e-8
+weight_decay: 1e-5
+optimizer_8bit: False
+optimizer_torchao: False
+scale_lr: False
+
+max_grad_norm: 1.0
+gradient_accumulation_steps: 1
+
+# lr_scheduler Config
+lr_scheduler: constant_with_warmup
+lr_warmup_steps: 1000
+lr_num_cycles: 1
+lr_power: 1.0
+
+# Timestep Config
+flow_weighting_scheme: none
+flow_logit_mean: 0.0
+flow_logit_std: 1.0
+flow_mode_scale: 1.29
+
+pixel_wise_timestep: True
+
+# -----------------------------------------------------------------------------
+# DiT (trainable in this phase)
+# -----------------------------------------------------------------------------
+diffusion_model:
+  model_path: pretrained_models/genie_envisioner/GE_base_fast_v0.1.safetensors
+  config:
+    activation_fn: gelu-approximate
+    attention_bias: true
+    attention_head_dim: 64
+    attention_out_bias: true
+    caption_channels: 4096
+    cross_attention_dim: 2048
+    in_channels: 128
+    norm_elementwise_affine: false
+    norm_eps: 1.0e-6
+    num_attention_heads: 32
+    num_layers: 28
+    out_channels: 128
+    patch_size: 1
+    patch_size_t: 1
+    qk_norm: rms_norm_across_heads
+    action_expert: false        # phase 1: video_only; no action head allocated
+    # max_view MUST be >= n_view_visual + n_view_tactile. With_wrist chip:
+    # V_visual=3 (head + L/R wrist) + V_tactile=2 (L/R hand) = V_full=5, which
+    # exceeds the default view_embed table (3) in transformer_ltx_multiview.py,
+    # so extend it to 5. (Matches the erase with_wrist B2 sibling; the paired
+    # RELATIVE B3 action config sets the SAME max_view: 5 so the action expert
+    # reuses this WM body's view_embed allocation.)
+    max_view: 5
+
+# -----------------------------------------------------------------------------
+# Dataset config (cube corpus train/val + 488 cross-domain val_splits probe).
+#
+# Action layout (150-dim, this corpus -- emitted by current convert_to_vtam.py):
+#   [0:60]    = tactile_f6 (5 fingers x 6 force channels x 2 hands)
+#   [60:74]   = arm target joints (2 hands x 7)
+#   [74:118]  = hand target joints (2 x 22)
+#   [118:150] = arm target pose 4x4 flat (2 x 16)
+# State (90-dim):
+#   [0:7]     = L_arm joints (7)
+#   [7:14]    = R_arm joints (7)
+#   [14:36]   = L_hand joints (22)
+#   [36:58]   = R_hand joints (22)
+#   [58:74]   = L_arm current pose 4x4 (16)
+#   [74:90]   = R_arm current pose 4x4 (16)
+# state layout differs from cube/488 (cube: [L_arm, L_hand, R_arm, R_hand]; this
+# corpus: [L_arm, R_arm, L_hand, R_hand, L_pose, R_pose]). hand_pose extraction
+# is handled by `_extract_hand_pose`'s state_dim dispatch -- nothing to set here.
+#
+# Train/val split:
+#   - train             : episodes [0..85]  (86 episodes)
+#   - 20260724_unscrew_bottle_cap_v2_val
+#                       : episodes [86..95] (10 episodes; in-corpus holdout)
+#
+# pose_stats: REUSES 488 pose_stats per gotcha #6.
+# -----------------------------------------------------------------------------
+data:
+  train:
+    data_roots: ["data/datasets_lerobot/20260724_unscrew_bottle_cap_v2"]
+    domains: ["20260724_unscrew_bottle_cap_v2"]
+    episodes: [
+       0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
+      16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+      32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+      48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+      64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+      80, 81, 82, 83, 84, 85,
+    ]
+    sample_size: [192, 256]
+    sample_n_frames: 900
+    preprocess: 'resize'
+    valid_cam: ['head_img', 'left_wrist_img', 'right_wrist_img']
+    chunk: 9
+    action_chunk: 54                      # video_temporal_stride = 54/9 = 6
+    n_previous: 4
+    previous_pick_mode: 'random'
+    random_crop: False
+    ignore_seek: False
+    action_type: "relative_eef_rot6d"
+    action_space: "eef"
+    arm_layout: "bimanual"
+    stat_file: configs/ltx_model/0730_unscrew_bottle_cap_v2_with_wrist_eef_relative/20260724_unscrew_bottle_cap_v2_relative_stats.json
+    state_key: state
+    action_key: actions
+    extra_parquet_index: False
+    read_tactile: true                    # required for use_tactile_views=true
+    tactile_key: tactile
+    repeat_dataset: 1000                  # 90 corpus x 1000 = 90k virtual
+                                          #   samples. With 80k train steps *
+                                          #   bs=16 * world_size=4 = 5.12M
+                                          #   total batch items, the dataloader
+                                          #   iterates ~57 epochs. 1000 prevents
+                                          #   early dataloader exhaustion.
+    # ----- v0d additions (pose injection input) -----------------------
+    read_hand_pose: true                  # emit (V_hand=2, T, 22) per sample
+    pose_stats_path: data/stats/diverse_488/pose_stats.json
+    pose_mode: per_frame                  # v0d Stage-1 schedule (T*22 traj;
+                                          #   adapter._align_pose_to_lat
+                                          #   resamples to T_lat)
+    # ----- Offline preprocess cache fast path ------------------------
+    # Routes get_batch through _get_batch_from_cache, which reads mmap'd
+    # episode_NNNNNN/{video,tactile,action,state}.npy and skips PIL
+    # decode + _deep_stack + resize. Built once via
+    # scripts/preprocess_dex_vtam_cache.sh and shared with phase 3
+    # (action_model yamls reuse the same cache_dir).
+    cache_dir: data/cache/unscrew_bottle_cap_v2_with_wrist_v1
+
+  val:
+    # Legacy single-batch qualitative video sampler (self.validate() path;
+    # runs on main process only). Distinct from data.val_splits below, which
+    # drives the new A3 multi-split val-LOSS path. Point at the cube holdout
+    # so the qualitative samples come from out-of-train episodes.
+    data_roots: ["data/datasets_lerobot/20260724_unscrew_bottle_cap_v2"]
+    domains: ["20260724_unscrew_bottle_cap_v2"]
+    episodes: [86, 87, 88, 89, 90, 91, 92, 93, 94, 95]
+    sample_size: [192, 256]
+    sample_n_frames: 900
+    preprocess: 'resize'
+    valid_cam: ['head_img', 'left_wrist_img', 'right_wrist_img']
+    chunk: 9
+    action_chunk: 54
+    n_previous: 4
+    previous_pick_mode: 'random'
+    random_crop: False
+    ignore_seek: False
+    action_type: "relative_eef_rot6d"
+    action_space: "eef"
+    arm_layout: "bimanual"
+    stat_file: configs/ltx_model/0730_unscrew_bottle_cap_v2_with_wrist_eef_relative/20260724_unscrew_bottle_cap_v2_relative_stats.json
+    state_key: state
+    action_key: actions
+    extra_parquet_index: False
+    read_tactile: true
+    tactile_key: tactile
+    read_hand_pose: true
+    pose_stats_path: data/stats/diverse_488/pose_stats.json
+    pose_mode: per_frame
+    cache_dir: data/cache/unscrew_bottle_cap_v2_with_wrist_v1
+
+  # ---------------------------------------------------------------------
+  # A3 multi-split validation (val-LOSS path; separate from legacy
+  # `data.val` qualitative video). Each named entry under `val_splits`
+  # is passed straight through as `**kwargs` to `DexVTAMDataset` (incl.
+  # the A3.0 `episodes` filter). The trainer builds one DataLoader per
+  # entry into `self.val_loaders` (see `prepare_val_splits`) and the
+  # train loop calls `_compute_val_loss(loader, tag=split_name)` for
+  # each at every `steps_to_val` interval. Per-split losses are logged
+  # as `[val/<name>] over N batches: loss=...`.
+  #
+  # `20260724_unscrew_bottle_cap_v2_val` (PRIMARY, in-corpus) -- only split in this yaml.
+  # No cross-corpus probe: cube/488 share dims 58/136 but this corpus is
+  # 90/150, so adding a holdout_cube or holdout_488 would dim-mismatch on
+  # the action/state q01/q99 stats. (erase shares 90/150 but cross-corpus
+  # WM val isn't part of this paired B3 wiring.)
+  # ---------------------------------------------------------------------
+  val_splits:
+    20260724_unscrew_bottle_cap_v2_val:
+      data_roots: ["data/datasets_lerobot/20260724_unscrew_bottle_cap_v2"]
+      domains: ["20260724_unscrew_bottle_cap_v2"]
+      episodes: [86, 87, 88, 89, 90, 91, 92, 93, 94, 95]
+      sample_size: [192, 256]
+      sample_n_frames: 900
+      preprocess: 'resize'
+      valid_cam: ['head_img', 'left_wrist_img', 'right_wrist_img']
+      chunk: 9
+      action_chunk: 54
+      n_previous: 4
+      previous_pick_mode: 'random'
+      random_crop: False
+      ignore_seek: False
+      action_type: "relative_eef_rot6d"
+      action_space: "eef"
+      arm_layout: "bimanual"
+      stat_file: configs/ltx_model/0730_unscrew_bottle_cap_v2_with_wrist_eef_relative/20260724_unscrew_bottle_cap_v2_relative_stats.json
+      state_key: state
+      action_key: actions
+      extra_parquet_index: False
+      read_tactile: true
+      tactile_key: tactile
+      read_hand_pose: true
+      pose_stats_path: data/stats/diverse_488/pose_stats.json
+      pose_mode: per_frame
+      cache_dir: data/cache/unscrew_bottle_cap_v2_with_wrist_v1
+
+
+use_color_jitter: true
+num_inference_step: 10
+noisy_video: false                       # video_only path
+
+load_weights: true
+
+# -----------------------------------------------------------------------------
+# DeepSpeed (ZeRO-2). Phase 2 has the full DiT trainable; ZeRO-2 shards
+# optimizer states across ranks. Enable CPU offload if OOM at bs=16.
+# -----------------------------------------------------------------------------
+use_deepspeed: true
+deepspeed:
+  zero_optimization:
+    stage: 2
+  fp16:
+    enabled: false
+  bf16:
+    enabled: true
+  gradient_clipping: 1.0

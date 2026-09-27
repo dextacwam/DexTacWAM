@@ -1,0 +1,20 @@
+DexTacWAM builds on Genie-Envisioner-V1:
+
+    https://github.com/AgibotTech/Genie-Envisioner-V1
+    pinned commit d54425c4d0ba9d56b33adc4bfe5e5187e5335603
+
+That project does not carry a licence, so none of its code is redistributed
+here. This repository contains only work authored by the DexTacWAM authors:
+
+  * src/        new modules that sit alongside the upstream tree
+  * configs/    training and evaluation configurations
+  * tests/      unit and smoke tests
+  * patches/    a diff against the pinned upstream commit
+
+`setup_upstream.sh` clones Genie-Envisioner-V1 yourself, applies the patch and
+overlays src/. Whether you may use the result is governed by whatever terms
+AgibotTech grants for their code; the MIT licence in this repository covers the
+DexTacWAM contribution only.
+
+The pretrained LTX-Video and Genie-Envisioner weights that the configs expect
+are distributed by their respective authors under their own terms.

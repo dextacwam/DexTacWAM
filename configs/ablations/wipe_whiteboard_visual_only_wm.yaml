@@ -1,0 +1,485 @@
+# =============================================================================
+# Stage 2 Phase 2 (B2) -- VISION-ONLY World Model, 20260808_wipe_white_board
+#                         WITH_WRIST V=3 (head + L/R wrist), NO tactile views
+#                         reference run
+#                         TACTILE-WM ABLATION folder
+# =============================================================================
+# WHY THIS RUN EXISTS
+# -------------------
+# This is the Stage-2 half of the tactile world-model ablation (plan
+# tactile_wm_ablation_design_38d83c2f). The question it serves is:
+#
+#   given the SAME tactile encoder, is an independent late tactile
+#   cross-attention into the action expert enough, or does tactile have to be
+#   inside the world model?
+#
+# The full DexVTAM WM (the sibling yaml in
+#   configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/
+#     video_model_0808_wipe_white_board_with_wrist_tactile_v0d_proj_bypass.yaml)
+# co-denoises 3 RGB views AND 2 tactile views, so its hidden states ARE a
+# visuo-tactile world state. This run trains the control: the same corpus, the
+# same recipe, the same 3 RGB views, but tactile removed from the DiT entirely.
+# The paired Stage-3 config then re-attaches tactile as a late, action-side
+# path only. If the full model still wins, the win is attributable to tactile
+# world modeling rather than to tactile sensing.
+#
+# DIFFS vs the full-model B2 sibling (everything else is byte-identical,
+# including the whole `data:` block, so the two arms train on exactly the same
+# samples in the same order):
+#   * use_tactile_views: true -> false   (the load-bearing change: tactile
+#     views are never concatenated onto the view axis, so no transformer block
+#     and no cross-view attention ever sees a tactile token)
+#   * loss.lambda_tactile: 1.0 -> 0.0    (no tactile denoise target exists)
+#   * max_view: 5 -> 3                   (V_full = 3 RGB, no tactile views)
+#   * tactile_vae / projector blocks removed -- with use_tactile_views=false
+#     the dispatcher never constructs them, so leaving them in would only
+#     suggest a tactile path that does not exist here.
+#   * output_dir -> ..._visual_only_wm
+#
+# The `data:` block still sets read_tactile/read_hand_pose true and points at
+# the SAME cache as the full model. That is deliberate: the tactile column is
+# read and then dropped, which costs a little I/O but guarantees both arms see
+# an identical dataloader, identical cache and identical sampling. The Stage-3
+# ablation reuses the same cache and does consume that column.
+#
+# Task: hold the white board steady with the LEFT hand and wipe it clean with
+#       the eraser held in the RIGHT hand.
+# Bimanual throughout, 99 episodes, train [0..88] / in-corpus val [89..98].
+# 99 not 100: source episode_0014 was discarded during conversion, so the
+# output episode indices run 0..98 contiguously.
+#
+# Cloned from the tong with_wrist B2 sibling
+#   0727_pick_cherry_tomato_with_tong_with_wrist_eef_relative/
+#     video_model_0727_pick_cherry_tomato_with_tong_with_wrist_tactile_v0d_proj_bypass.yaml
+# -- the closest structural match (same V=3 cams, same V=2 tactile hands, same
+# max_view=5, same bimanual relative geometry, same last-10-episodes holdout
+# shape -- shifted down by one here because this corpus has 99 episodes).
+# Only corpus-bound fields differ; the recipe below is unchanged from it.
+#
+# Corpus-bound differences vs that tong sibling:
+#   A. CORPUS: data_roots / domains / val_splits key -> 20260808_wipe_white_board.
+#      Expected per-frame parquet schema (shared by every task in this family):
+#        head_img / left_wrist_img / right_wrist_img : (192,256,3) uint8
+#        tactile                                     : (2, 5, 192, 256) uint8
+#        state                                       : (90,) float32
+#        actions                                     : (150,) float32
+#      The cache preprocess step fails loudly if a listed camera is absent, so
+#      a schema mismatch surfaces there rather than mid-training.
+#
+#   B. CACHE: cache/20260808_wipe_white_board_with_wrist_v1. The 20260808 date
+#      prefix is load-bearing: this is the SAME TASK as the much older
+#      0514_erase_whiteboard_100episodes corpus (TASK=erase in
+#      calc_stats_relative_eef_rot6d.sh), so an undated name would be a
+#      standing invitation to share one cache between two different corpora
+#      and feed the wrong episodes into training.
+#
+#   C. STATS: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/
+#             20260808_wipe_white_board_relative_stats.json  (NEW -- generate on
+#      before launching, via
+#        TASK=wipe_white_board bash scripts/calc_stats_relative_eef_rot6d.sh
+#      which emits {domain}_relative_eef (136) + _state_eef (90) plus the
+#      absolute _eef/_delta_eef blocks).
+#
+# RELATIVE LABELS are cosmetic here -- the WM is action-agnostic. action_type is
+# set to relative_eef_rot6d + action_space=eef so this config co-locates with its
+# paired B3 in the *_eef_relative folder and reads the SAME single stats file.
+# B2 trains with return_action=false + add_state=False, so the DiT body NEVER
+# sees action/state: the dataset still relativizes and normalizes the action
+# window, but that tensor is DISCARDED. The phase-aware guard in
+# tactile_dit_trainer._validate_action_config SKIPS the 226-wide action-expert
+# dim checks for world_model_only phases.
+#
+# WM warmstart stays on GE-base, same as the full-model B2.
+#
+# Output: B2 trainer ckpt (DiT safetensors; no projector.pt, since no
+#         projector is built here), consumed by the paired Stage-3 ablation:
+#           configs/ltx_model/0808_wipe_white_board_tacwm_ablation/
+#             action_model_0808_wipe_white_board_tacwm_ablation_late_fuse_long50000.yaml
+#         Already done for run 2026_08_10_12_50_24 (step_30000 is pinned
+#         there). For a rerun, replace the model_path in that yaml's
+#         diffusion_model.model_path with this run's <TS>/step_<N>. Use
+#         step_30000: the full-model B3 warmstarted from its own WM at
+#         step_30000, and matching the step is part of holding everything
+#         except the tactile pathway fixed.
+# -----------------------------------------------------------------------------
+# Recipe (identical to the full-model B2 except where noted above):
+#   - WM warmstart   : GE-base (GE_base_fast_v0.1.safetensors)
+#   - Stage-1 adapter: NOT LOADED here (no tactile in this world model)
+#   - GE-aligned     : batch_size=16, caption_dropout_p=0.06,
+#                      noise_to_first_frame=0.1, lr_warmup_steps=1000
+#   - train_steps    : 80000
+#
+# Trainable: DiT (every param except action_*; GE 'video_only' filter)
+# Frozen   : LTX VAE, T5 enc/tok
+#
+# Loss     : plain video denoise loss over the 3 RGB views. The per-modality
+#            visual/tactile split that the full-model B2 logs does not apply
+#            here -- there is no second modality to split off.
+#
+# Val splits:
+#   - 20260808_wipe_white_board_val : PRIMARY (in-corpus holdout, episodes [89..98])
+#
+# Run as (4xH200 NVL, effective batch = 4 * 16 = 64):
+#   bash scripts/launch_b2_world_model_0808_wipe_white_board_visual_only_80k.sh
+#
+# Wall-clock: expect FASTER than the full model's measured 2.47 s/it, because
+# V_full drops from 5 to 3. Re-measure before quoting a number; do not reuse
+# the full model's 55 h / 80k estimate.
+# =============================================================================
+
+model_name: 'ltx_train'
+is_i2v: True
+report_to: None
+tracker_name: ltx_trainer
+
+logging_dir: logs
+output_dir: outputs/stage2_phase2_world_model_0808_wipe_white_board_visual_only_wm
+pretrained_model_name_or_path: pretrained_models/ltx_video
+
+###
+# Use DexVTAMDataset (libero fork + tactile column). MUST be DexVTAMDataset
+# whenever use_tactile_views=true; libero's CustomLeRobotDataset does NOT yield
+# batch['tactile'].
+train_data_class_path: data/dex_vtam_dataset.py
+train_data_class: DexVTAMDataset
+val_data_class_path: data/dex_vtam_dataset.py
+val_data_class: DexVTAMDataset
+
+###
+tokenizer_class_path: transformers
+tokenizer_class: T5Tokenizer
+textenc_class_path: transformers
+textenc_class: T5EncoderModel
+vae_class_path: models/ltx_models/autoencoder_kl_ltx.py
+vae_class: AutoencoderKLLTXVideo
+diffusion_model_class_path: models/ltx_models/transformer_ltx_multiview.py
+diffusion_model_class: LTXVideoTransformer3DModel
+diffusion_scheduler_class_path: diffusers
+diffusion_scheduler_class: FlowMatchEulerDiscreteScheduler
+
+pipeline_class_path: models/pipeline/custom_pipeline.py
+pipeline_class: CustomPipeline
+
+# -----------------------------------------------------------------------------
+# TactileDiTTrainer dispatcher (Stage 2 phase 2)
+# -----------------------------------------------------------------------------
+phase: world_model_only
+# THE load-bearing line of this ablation arm. false means the trainer never
+# appends tactile to the view axis, so `n_view` stays 3, cross-view attention
+# spans RGB views only, and nothing the DiT computes is a function of tactile.
+# Turning off only the tactile LOSS while leaving the views in would still let
+# tactile leak into every visual hidden state through cross-view mixing, and
+# the ablation would answer nothing.
+use_tactile_views: false
+train_mode: 'video_only'
+
+# -----------------------------------------------------------------------------
+# Per-modality loss weighting (Stage 2).
+# lambda_tactile is 0.0 because there is no tactile view to denoise. The
+# trainer ignores both values on the no-tactile path (loss_visual becomes the
+# whole video loss); they are spelled out to keep the diff against the
+# full-model sibling readable.
+# -----------------------------------------------------------------------------
+loss:
+  lambda_visual:  1.0
+  lambda_tactile: 0.0
+
+# -----------------------------------------------------------------------------
+# NO tactile_vae / projector blocks in this run.
+#
+# With use_tactile_views=false the dispatcher (`_stage2_prepare_tactile`)
+# never constructs the Stage-1 adapter or the projector, so any block here
+# would be dead config that reads as if tactile were involved. The PAIRED
+# Stage-3 ablation config does declare a tactile_vae -- it pins the exact same
+# v0d adapter ckpt the full model uses, which is what makes "same tactile
+# encoder, different destination" true.
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# Optimizer. Only the DiT group exists here (no projector module is built),
+# but lr_dit / train_steps are held identical to the full-model B2 so the two
+# world models differ in inputs and nothing else.
+# -----------------------------------------------------------------------------
+optim:
+  lr_dit:       3.0e-4   # DiT body fine-tunes on top of GE pretrained weights
+  lr_projector: 3.0e-4   # unused: no projector group on the vision-only path
+  train_steps:  80000    # matches 488 sibling for paired comparison (bumped from 50k -> 80k 2026-05-25)
+
+# -----------------------------------------------------------------------------
+# GE training-loop knobs
+# -----------------------------------------------------------------------------
+return_action: false
+return_video: true
+action_loss_scale: 1.0
+
+# total training step is decided by the minimum of train_steps and
+# train_epochs * steps_per_epoch. We let `optim.train_steps` (80000) be the
+# binding constraint (matches the 488 sibling).
+train_steps: 1000000
+train_epochs: 10000
+steps_to_save: 5000
+steps_to_log: 200
+steps_to_val:  2000
+
+mixed_precision: bf16
+allow_tf32: False
+
+# timeout, seconds
+nccl_timeout: 600
+seed: 42
+
+# vae
+enable_slicing: True
+enable_tiling: True
+
+add_state: False
+caption_dropout_p: 0.06
+
+# dataloader
+# Per-process batch_size; on 4xH200 NVL the effective batch is 4*16=64.
+# Phase 2 has the HEAVIEST step (DiT trainable + full activation grads).
+# gradient_checkpointing=True is essential to fit bs=16 on 143GB H200.
+batch_size: 16
+dataloader_num_workers: 12
+pin_memory: True
+prefetch_factor: 8              # cover slow-batch latency vs round-robin period
+persistent_workers: True        # don't kill workers between epochs
+
+gradient_checkpointing: True
+noise_to_first_frame: 0.1
+
+# Optimizer Config (top-level: GE base-trainer expectations; primary_lr will
+# be overridden by `optim.lr_dit` in prepare_optimizer)
+optimizer: adamw
+lr: 3.0e-4              # mirrors optim.lr_dit (used as fallback only)
+beta1: 0.9
+beta2: 0.95
+beta3: 0.999
+epsilon: 1e-8
+weight_decay: 1e-5
+optimizer_8bit: False
+optimizer_torchao: False
+scale_lr: False
+
+max_grad_norm: 1.0
+gradient_accumulation_steps: 1
+
+# lr_scheduler Config
+lr_scheduler: constant_with_warmup
+lr_warmup_steps: 1000
+lr_num_cycles: 1
+lr_power: 1.0
+
+# Timestep Config
+flow_weighting_scheme: none
+flow_logit_mean: 0.0
+flow_logit_std: 1.0
+flow_mode_scale: 1.29
+
+pixel_wise_timestep: True
+
+# -----------------------------------------------------------------------------
+# DiT (trainable in this phase)
+# -----------------------------------------------------------------------------
+diffusion_model:
+  model_path: pretrained_models/genie_envisioner/GE_base_fast_v0.1.safetensors
+  config:
+    activation_fn: gelu-approximate
+    attention_bias: true
+    attention_head_dim: 64
+    attention_out_bias: true
+    caption_channels: 4096
+    cross_attention_dim: 2048
+    in_channels: 128
+    norm_elementwise_affine: false
+    norm_eps: 1.0e-6
+    num_attention_heads: 32
+    num_layers: 28
+    out_channels: 128
+    patch_size: 1
+    patch_size_t: 1
+    qk_norm: rms_norm_across_heads
+    action_expert: false        # phase 1: video_only; no action head allocated
+    # max_view MUST be >= n_view_visual + n_view_tactile. Here V_full = 3 RGB
+    # views and ZERO tactile views, so 3 -- not the 5 of the full-model B2,
+    # whose extra two rows existed only to give the two tactile hands a view
+    # embedding. The paired Stage-3 ablation config MUST also say 3 so the
+    # view_embed table it warmstarts from lines up; its tactile hands get
+    # their identity from `tactile_late_fuse_view_embed` instead, which is a
+    # separate parameter precisely because those tokens never reach adaLN.
+    max_view: 3
+
+# -----------------------------------------------------------------------------
+# Dataset config (wipe_white_board corpus train/val; single in-corpus val_split).
+#
+# Action layout (150-dim, this corpus -- emitted by current convert_to_vtam.py):
+#   [0:60]    = tactile_f6 (5 fingers x 6 force channels x 2 hands)
+#   [60:74]   = arm target joints (2 hands x 7)
+#   [74:118]  = hand target joints (2 x 22)
+#   [118:150] = arm target pose 4x4 flat (2 x 16)
+# State (90-dim):
+#   [0:7]     = L_arm joints (7)
+#   [7:14]    = R_arm joints (7)
+#   [14:36]   = L_hand joints (22)
+#   [36:58]   = R_hand joints (22)
+#   [58:74]   = L_arm current pose 4x4 (16)
+#   [74:90]   = R_arm current pose 4x4 (16)
+# state layout differs from cube/488 (cube: [L_arm, L_hand, R_arm, R_hand]; this
+# corpus: [L_arm, R_arm, L_hand, R_hand, L_pose, R_pose]). hand_pose extraction
+# is handled by `_extract_hand_pose`'s state_dim dispatch -- nothing to set here.
+#
+# Train/val split:
+#   - train             : episodes [0..89]  (90 episodes)
+#   - 20260808_wipe_white_board_val
+#                       : episodes [90..99] (10 episodes; in-corpus holdout)
+#
+# pose_stats: REUSES 488 pose_stats per gotcha #6.
+# -----------------------------------------------------------------------------
+data:
+  train:
+    data_roots: ["data/datasets_lerobot/20260808_wipe_white_board"]
+    domains: ["20260808_wipe_white_board"]
+    episodes: [
+       0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
+      16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+      32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+      48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+      64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+      80, 81, 82, 83, 84, 85, 86, 87, 88,
+    ]
+    sample_size: [192, 256]
+    sample_n_frames: 900
+    preprocess: 'resize'
+    valid_cam: ['head_img', 'left_wrist_img', 'right_wrist_img']
+    chunk: 9
+    action_chunk: 54                      # video_temporal_stride = 54/9 = 6
+    n_previous: 4
+    previous_pick_mode: 'random'
+    random_crop: False
+    ignore_seek: False
+    action_type: "relative_eef_rot6d"
+    action_space: "eef"
+    arm_layout: "bimanual"
+    stat_file: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/20260808_wipe_white_board_relative_stats.json
+    state_key: state
+    action_key: actions
+    extra_parquet_index: False
+    read_tactile: true                    # required for use_tactile_views=true
+    tactile_key: tactile
+    repeat_dataset: 1000                  # 90 corpus x 1000 = 90k virtual
+                                          #   samples. With 80k train steps *
+                                          #   bs=16 * world_size=4 = 5.12M
+                                          #   total batch items, the dataloader
+                                          #   iterates ~57 epochs. 1000 prevents
+                                          #   early dataloader exhaustion.
+    # ----- v0d additions (pose injection input) -----------------------
+    read_hand_pose: true                  # emit (V_hand=2, T, 22) per sample
+    pose_stats_path: data/stats/diverse_488/pose_stats.json
+    pose_mode: per_frame                  # v0d Stage-1 schedule (T*22 traj;
+                                          #   adapter._align_pose_to_lat
+                                          #   resamples to T_lat)
+    # ----- Offline preprocess cache fast path ------------------------
+    # Routes get_batch through _get_batch_from_cache, which reads mmap'd
+    # episode_NNNNNN/{video,tactile,action,state}.npy and skips PIL
+    # decode + _deep_stack + resize. Built once via
+    # scripts/preprocess_dex_vtam_cache.sh and shared with phase 3
+    # (action_model yamls reuse the same cache_dir).
+    cache_dir: data/cache/20260808_wipe_white_board_with_wrist_v1
+
+  val:
+    # Legacy single-batch qualitative video sampler (self.validate() path;
+    # runs on main process only). Distinct from data.val_splits below, which
+    # drives the new A3 multi-split val-LOSS path. Point at the holdout
+    # so the qualitative samples come from out-of-train episodes.
+    data_roots: ["data/datasets_lerobot/20260808_wipe_white_board"]
+    domains: ["20260808_wipe_white_board"]
+    episodes: [89, 90, 91, 92, 93, 94, 95, 96, 97, 98]
+    sample_size: [192, 256]
+    sample_n_frames: 900
+    preprocess: 'resize'
+    valid_cam: ['head_img', 'left_wrist_img', 'right_wrist_img']
+    chunk: 9
+    action_chunk: 54
+    n_previous: 4
+    previous_pick_mode: 'random'
+    random_crop: False
+    ignore_seek: False
+    action_type: "relative_eef_rot6d"
+    action_space: "eef"
+    arm_layout: "bimanual"
+    stat_file: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/20260808_wipe_white_board_relative_stats.json
+    state_key: state
+    action_key: actions
+    extra_parquet_index: False
+    read_tactile: true
+    tactile_key: tactile
+    read_hand_pose: true
+    pose_stats_path: data/stats/diverse_488/pose_stats.json
+    pose_mode: per_frame
+    cache_dir: data/cache/20260808_wipe_white_board_with_wrist_v1
+
+  # ---------------------------------------------------------------------
+  # A3 multi-split validation (val-LOSS path; separate from legacy
+  # `data.val` qualitative video). Each named entry under `val_splits`
+  # is passed straight through as `**kwargs` to `DexVTAMDataset` (incl.
+  # the A3.0 `episodes` filter). The trainer builds one DataLoader per
+  # entry into `self.val_loaders` (see `prepare_val_splits`) and the
+  # train loop calls `_compute_val_loss(loader, tag=split_name)` for
+  # each at every `steps_to_val` interval. Per-split losses are logged
+  # as `[val/<name>] over N batches: loss=...`.
+  #
+  # `20260808_wipe_white_board_val` (PRIMARY, in-corpus) -- only split in this yaml.
+  # No cross-corpus probe: the 488 corpus is 58/136 while this one is 90/150,
+  # so a holdout_488 split would dim-mismatch on the action/state q01/q99
+  # stats. The other 90/150 corpora would fit, but cross-corpus WM val is not
+  # part of this paired B3 wiring.
+  # ---------------------------------------------------------------------
+  val_splits:
+    20260808_wipe_white_board_val:
+      data_roots: ["data/datasets_lerobot/20260808_wipe_white_board"]
+      domains: ["20260808_wipe_white_board"]
+      episodes: [89, 90, 91, 92, 93, 94, 95, 96, 97, 98]
+      sample_size: [192, 256]
+      sample_n_frames: 900
+      preprocess: 'resize'
+      valid_cam: ['head_img', 'left_wrist_img', 'right_wrist_img']
+      chunk: 9
+      action_chunk: 54
+      n_previous: 4
+      previous_pick_mode: 'random'
+      random_crop: False
+      ignore_seek: False
+      action_type: "relative_eef_rot6d"
+      action_space: "eef"
+      arm_layout: "bimanual"
+      stat_file: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/20260808_wipe_white_board_relative_stats.json
+      state_key: state
+      action_key: actions
+      extra_parquet_index: False
+      read_tactile: true
+      tactile_key: tactile
+      read_hand_pose: true
+      pose_stats_path: data/stats/diverse_488/pose_stats.json
+      pose_mode: per_frame
+      cache_dir: data/cache/20260808_wipe_white_board_with_wrist_v1
+
+
+use_color_jitter: true
+num_inference_step: 10
+noisy_video: false                       # video_only path
+
+load_weights: true
+
+# -----------------------------------------------------------------------------
+# DeepSpeed (ZeRO-2). Phase 2 has the full DiT trainable; ZeRO-2 shards
+# optimizer states across ranks. Enable CPU offload if OOM at bs=16.
+# -----------------------------------------------------------------------------
+use_deepspeed: true
+deepspeed:
+  zero_optimization:
+    stage: 2
+  fp16:
+    enabled: false
+  bf16:
+    enabled: true
+  gradient_clipping: 1.0

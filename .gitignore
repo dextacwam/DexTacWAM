@@ -4,6 +4,9 @@ __pycache__/
 .venv/
 venv/
 
+# setup_upstream.sh clones Genie-Envisioner-V1 here; it is not ours to commit.
+build/
+
 # Checkpoints and data land here once released; keep large artifacts out of git.
 *.ckpt
 *.pth
