@@ -51,7 +51,7 @@ Recommended workflow (single GPU; do this BEFORE committing A2):
     #    a smoke that the helper at least RUNS without exceptions.
     CUDA_VISIBLE_DEVICES=0 python ./smoke_v0d_dit_a2_numerical.py \
         --capture \
-        --config configs/ltx_model/right_hand_pick_cube/video_model_right_hand_pick_cube_tactile_dryrun.yaml \
+        --config configs/cube_handover/stage2_world_model.yaml \
         --output /tmp/a2_loss.json
 
     # 2. Stash and check out A1 commit
@@ -61,7 +61,7 @@ Recommended workflow (single GPU; do this BEFORE committing A2):
 
     CUDA_VISIBLE_DEVICES=0 python ./smoke_v0d_dit_a2_numerical.py \
         --capture \
-        --config configs/ltx_model/right_hand_pick_cube/video_model_right_hand_pick_cube_tactile_dryrun.yaml \
+        --config configs/cube_handover/stage2_world_model.yaml \
         --output /tmp/a1_loss.json
 
     # 3. Restore A2 + diff

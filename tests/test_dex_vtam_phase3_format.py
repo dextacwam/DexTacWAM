@@ -1,7 +1,7 @@
 """Phase 3 (action_full) dataset format check.
 
 Verifies that ``DexVTAMDataset`` -- as configured by a Stage-3 yaml such as
-``configs/ltx_model/right_hand_pick_cube/action_model_right_hand_pick_cube_tactile.yaml``
+``configs/cube_handover/stage3_action_expert.yaml``
 -- produces samples whose shape / dtype / value-range / cat layout / state
 prompt layout match what ``TactileDiTTrainer`` consumes on the
 ``train_mode='action_full'`` + ``return_action=True`` + ``add_state=True``
@@ -19,13 +19,13 @@ the production yaml with ``train_steps=20`` override on 2 GPUs.
 Usage::
 
     python scripts/test_dex_vtam_phase3_format.py \\
-      --config configs/ltx_model/right_hand_pick_cube/action_model_right_hand_pick_cube_tactile.yaml
+      --config configs/cube_handover/stage3_action_expert.yaml
 
 Optional overrides (handy when running on a host whose ``data_roots`` /
 ``cache_dir`` differ from the production yaml):
 
     python scripts/test_dex_vtam_phase3_format.py \\
-      --config configs/ltx_model/right_hand_pick_cube/action_model_right_hand_pick_cube_tactile.yaml \\
+      --config configs/cube_handover/stage3_action_expert.yaml \\
       --data-root data/pick_cube \\
       --cache-dir data/cache/right_hand_pick_cube_v1_test \\
       --indexes 0,1,2

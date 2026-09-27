@@ -55,7 +55,7 @@ Example
 
     cd .
     python scripts/eval_wm_tactile_flow_viz_offline.py \\
-        --config configs/ltx_model/diverse_488/action_model_diverse_488_d488wm_bypass_shared_long50000.yaml \\
+        --config configs/cube_handover/stage3_action_expert.yaml \\
         --checkpoint outputs/.../step_30000 \\
         --split holdout_488 \\
         --output_dir outputs/tactile_viz_offline/$(date +%Y_%m_%d_%H_%M_%S) \\

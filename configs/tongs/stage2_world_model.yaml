@@ -48,7 +48,7 @@
 #      arrays have different widths and a different camera set, so it must not be
 #      shared with the bimanual cache), output_dir and val_splits.<name>
 #      retargeted. The relative stat_file at
-#        configs/ltx_model/0801_placed_tong_right_only_eef_relative/
+#        configs/tongs/
 #          20260801_placed_tong_right_only_relative_stats.json
 #      is NEW (compute via
 #        TASK=placed_tong_right_only bash scripts/calc_stats_relative_eef_rot6d.sh
@@ -57,7 +57,7 @@
 #
 # Output: B2 trainer ckpt at step 80000 (DiT safetensors + projector.pt),
 #         consumed by the paired right-only RELATIVE B3 yaml at
-#           configs/ltx_model/0801_placed_tong_right_only_eef_relative/
+#           configs/tongs/
 #             action_model_0801_placed_tong_right_only_eef_relative_wm_bypass_shared_rmsnorm_long50000.yaml
 #         Fill the FILL_ME placeholder in that yaml's
 #         diffusion_model.model_path with this run's <TS>/step_<N> once a step
@@ -394,7 +394,7 @@ data:
     action_type: "relative_eef_rot6d"
     action_space: "eef"
     arm_layout: "right_only"
-    stat_file: configs/ltx_model/0801_placed_tong_right_only_eef_relative/20260801_placed_tong_right_only_relative_stats.json
+    stat_file: configs/tongs/20260801_placed_tong_right_only_relative_stats.json
     state_key: state
     action_key: actions
     extra_parquet_index: False
@@ -441,7 +441,7 @@ data:
     action_type: "relative_eef_rot6d"
     action_space: "eef"
     arm_layout: "right_only"
-    stat_file: configs/ltx_model/0801_placed_tong_right_only_eef_relative/20260801_placed_tong_right_only_relative_stats.json
+    stat_file: configs/tongs/20260801_placed_tong_right_only_relative_stats.json
     state_key: state
     action_key: actions
     extra_parquet_index: False
@@ -486,7 +486,7 @@ data:
       action_type: "relative_eef_rot6d"
       action_space: "eef"
       arm_layout: "right_only"
-      stat_file: configs/ltx_model/0801_placed_tong_right_only_eef_relative/20260801_placed_tong_right_only_relative_stats.json
+      stat_file: configs/tongs/20260801_placed_tong_right_only_relative_stats.json
       state_key: state
       action_key: actions
       extra_parquet_index: False

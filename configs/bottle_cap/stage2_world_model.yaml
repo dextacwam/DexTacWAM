@@ -49,7 +49,7 @@
 #   E. Paths/keys: stat_file, cache_dir (unscrew_bottle_cap_v2_with_wrist_v1), output_dir,
 #      val_splits.<name> retargeted to the with_wrist / relative variants. The
 #      relative stat_file at
-#        configs/ltx_model/0730_unscrew_bottle_cap_v2_with_wrist_eef_relative/
+#        configs/bottle_cap/
 #          20260724_unscrew_bottle_cap_v2_relative_stats.json
 #      is NEW (compute via
 #        TASK=unscrew bash scripts/calc_stats_relative_eef_rot6d.sh
@@ -59,7 +59,7 @@
 #
 # Output: B2 trainer ckpt at step 80000 (DiT safetensors + projector.pt),
 #         consumed by the paired with_wrist RELATIVE B3 yaml at
-#           configs/ltx_model/0730_unscrew_bottle_cap_v2_with_wrist_eef_relative/
+#           configs/bottle_cap/
 #             action_model_0730_unscrew_bottle_cap_v2_with_wrist_eef_relative_wm_bypass_shared_rmsnorm_long50000.yaml
 #         Fill the FILL_ME placeholder in that yaml's
 #         diffusion_model.model_path with this run's <TS>/step_<N> once a step
@@ -399,7 +399,7 @@ data:
     action_type: "relative_eef_rot6d"
     action_space: "eef"
     arm_layout: "bimanual"
-    stat_file: configs/ltx_model/0730_unscrew_bottle_cap_v2_with_wrist_eef_relative/20260724_unscrew_bottle_cap_v2_relative_stats.json
+    stat_file: configs/bottle_cap/20260724_unscrew_bottle_cap_v2_relative_stats.json
     state_key: state
     action_key: actions
     extra_parquet_index: False
@@ -446,7 +446,7 @@ data:
     action_type: "relative_eef_rot6d"
     action_space: "eef"
     arm_layout: "bimanual"
-    stat_file: configs/ltx_model/0730_unscrew_bottle_cap_v2_with_wrist_eef_relative/20260724_unscrew_bottle_cap_v2_relative_stats.json
+    stat_file: configs/bottle_cap/20260724_unscrew_bottle_cap_v2_relative_stats.json
     state_key: state
     action_key: actions
     extra_parquet_index: False
@@ -491,7 +491,7 @@ data:
       action_type: "relative_eef_rot6d"
       action_space: "eef"
       arm_layout: "bimanual"
-      stat_file: configs/ltx_model/0730_unscrew_bottle_cap_v2_with_wrist_eef_relative/20260724_unscrew_bottle_cap_v2_relative_stats.json
+      stat_file: configs/bottle_cap/20260724_unscrew_bottle_cap_v2_relative_stats.json
       state_key: state
       action_key: actions
       extra_parquet_index: False

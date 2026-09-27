@@ -30,7 +30,7 @@
 #      older 0514_pick_cube_handover_100episodes corpus, and quietly sharing a
 #      cache between two different corpora would feed the wrong episodes in.
 #
-#   C. STATS: configs/ltx_model/0806_cube_handover_with_wrist_eef_relative/
+#   C. STATS: configs/cube_handover/
 #             20260806_cube_handover_relative_stats.json  (NEW -- generate on
 #      before launching, via
 #        TASK=cube_handover bash scripts/calc_stats_relative_eef_rot6d.sh
@@ -50,7 +50,7 @@
 #
 # Output: B2 trainer ckpt at step 80000 (DiT safetensors + projector.pt),
 #         consumed by the paired with_wrist RELATIVE B3 yaml at
-#           configs/ltx_model/0806_cube_handover_with_wrist_eef_relative/
+#           configs/cube_handover/
 #             action_model_0806_cube_handover_with_wrist_eef_relative_wm_bypass_shared_rmsnorm_long50000.yaml
 #         Replace the FILL_ME placeholder in that yaml's
 #         diffusion_model.model_path with this run's <TS>/step_<N> once a step
@@ -390,7 +390,7 @@ data:
     action_type: "relative_eef_rot6d"
     action_space: "eef"
     arm_layout: "bimanual"
-    stat_file: configs/ltx_model/0806_cube_handover_with_wrist_eef_relative/20260806_cube_handover_relative_stats.json
+    stat_file: configs/cube_handover/20260806_cube_handover_relative_stats.json
     state_key: state
     action_key: actions
     extra_parquet_index: False
@@ -437,7 +437,7 @@ data:
     action_type: "relative_eef_rot6d"
     action_space: "eef"
     arm_layout: "bimanual"
-    stat_file: configs/ltx_model/0806_cube_handover_with_wrist_eef_relative/20260806_cube_handover_relative_stats.json
+    stat_file: configs/cube_handover/20260806_cube_handover_relative_stats.json
     state_key: state
     action_key: actions
     extra_parquet_index: False
@@ -482,7 +482,7 @@ data:
       action_type: "relative_eef_rot6d"
       action_space: "eef"
       arm_layout: "bimanual"
-      stat_file: configs/ltx_model/0806_cube_handover_with_wrist_eef_relative/20260806_cube_handover_relative_stats.json
+      stat_file: configs/cube_handover/20260806_cube_handover_relative_stats.json
       state_key: state
       action_key: actions
       extra_parquet_index: False

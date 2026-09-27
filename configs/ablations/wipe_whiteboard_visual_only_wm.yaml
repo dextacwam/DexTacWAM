@@ -14,7 +14,7 @@
 #   inside the world model?
 #
 # The full DexVTAM WM (the sibling yaml in
-#   configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/
+#   configs/wipe_whiteboard/
 #     video_model_0808_wipe_white_board_with_wrist_tactile_v0d_proj_bypass.yaml)
 # co-denoises 3 RGB views AND 2 tactile views, so its hidden states ARE a
 # visuo-tactile world state. This run trains the control: the same corpus, the
@@ -73,7 +73,7 @@
 #      standing invitation to share one cache between two different corpora
 #      and feed the wrong episodes into training.
 #
-#   C. STATS: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/
+#   C. STATS: configs/wipe_whiteboard/
 #             20260808_wipe_white_board_relative_stats.json  (NEW -- generate on
 #      before launching, via
 #        TASK=wipe_white_board bash scripts/calc_stats_relative_eef_rot6d.sh
@@ -93,7 +93,7 @@
 #
 # Output: B2 trainer ckpt (DiT safetensors; no projector.pt, since no
 #         projector is built here), consumed by the paired Stage-3 ablation:
-#           configs/ltx_model/0808_wipe_white_board_tacwm_ablation/
+#           configs/ablations/
 #             action_model_0808_wipe_white_board_tacwm_ablation_late_fuse_long50000.yaml
 #         Already done for run 2026_08_10_12_50_24 (step_30000 is pinned
 #         there). For a rerun, replace the model_path in that yaml's
@@ -360,7 +360,7 @@ data:
     action_type: "relative_eef_rot6d"
     action_space: "eef"
     arm_layout: "bimanual"
-    stat_file: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/20260808_wipe_white_board_relative_stats.json
+    stat_file: configs/wipe_whiteboard/20260808_wipe_white_board_relative_stats.json
     state_key: state
     action_key: actions
     extra_parquet_index: False
@@ -407,7 +407,7 @@ data:
     action_type: "relative_eef_rot6d"
     action_space: "eef"
     arm_layout: "bimanual"
-    stat_file: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/20260808_wipe_white_board_relative_stats.json
+    stat_file: configs/wipe_whiteboard/20260808_wipe_white_board_relative_stats.json
     state_key: state
     action_key: actions
     extra_parquet_index: False
@@ -452,7 +452,7 @@ data:
       action_type: "relative_eef_rot6d"
       action_space: "eef"
       arm_layout: "bimanual"
-      stat_file: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/20260808_wipe_white_board_relative_stats.json
+      stat_file: configs/wipe_whiteboard/20260808_wipe_white_board_relative_stats.json
       state_key: state
       action_key: actions
       extra_parquet_index: False

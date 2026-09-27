@@ -36,8 +36,7 @@ What this proves about Phase A3 (multi-split validation dataloaders):
 Run as:
 
     python scripts/smoke_v0d_dit_a3_val_splits.py \
-        --config configs/ltx_model/right_hand_pick_cube/\
-video_model_right_hand_pick_cube_tactile_v0d_dryrun.yaml \
+        --config configs/cube_handover/stage2_world_model.yaml \
         [--seed 42]
 
 Exit code 0 = PASS, 1 = FAIL or ERROR.

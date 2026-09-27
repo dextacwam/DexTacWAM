@@ -50,7 +50,7 @@ Usage::
       --valid-cam head_img right_wrist_img \\
       --action-type relative_eef_rot6d --action-space eef --arm-layout right_only \\
       --read-hand-pose --pose-stats-path data/stats/diverse_488/pose_stats.json \\
-      --stat-file configs/ltx_model/0729_tong_right_only_eef_relative/20260725_pick_cherry_tomato_with_tong_right_only_relative_stats.json \\
+      --stat-file configs/tongs/20260801_placed_tong_right_only_relative_stats.json \\
       --n-previous 4 --episodes 0,1,2
 
 Exits 0 on all-pass, 1 on any failure.

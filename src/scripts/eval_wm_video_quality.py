@@ -21,7 +21,7 @@ Mirrors `TactileDiTTrainer.validate()` for the pipe.infer call and
 
 Usage (with the genie_envisioner env active):
   python scripts/eval_wm_video_quality.py \
-      --config configs/ltx_model/0514_erase_whiteboard_with_wrist/video_model_0514_erase_whiteboard_with_wrist_tactile_v0d_proj_bypass.yaml \
+      --config configs/cube_handover/stage2_world_model.yaml \
       --checkpoint ./.../step_20000 \
       --tag tactile_20k \
       --out eval_artifacts/wm_video_quality \

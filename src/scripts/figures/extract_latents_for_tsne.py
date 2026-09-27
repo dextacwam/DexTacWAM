@@ -29,7 +29,7 @@ Artifacts written to <out>/<tag>/:
 
 Usage (with the genie_envisioner env active):
   python scripts/extract_latents_for_tsne.py \
-      --config configs/ltx_model/0530_pick_chip_no_wrist/video_model_0530_pick_chip_no_wrist_tactile_v0d_proj_bypass.yaml \
+      --config configs/cube_handover/stage2_world_model.yaml \
       --tag chip \
       --out eval_artifacts/latent_tsne \
       --max-samples 300 --batch-size 4

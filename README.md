@@ -34,40 +34,168 @@ cannot directly model these contact dynamics.
 DexTacWAM is a visuo-tactile World-Action Model that encodes each fingertip
 independently, aggregates the resulting features through a finger- and
 pose-aware tactile compressor, and injects the tactile latent into a video
-diffusion world model for joint visuo-tactile world modeling.
+diffusion world model for joint visuo-tactile world modeling. Across six
+contact-rich tasks on a 22-DoF bimanual platform it averages **70.6** against
+**38.0** for the strongest baseline.
 
-Across six contact-rich dexterous manipulation tasks on a 22-DoF bimanual
-platform, DexTacWAM achieves the highest score on every task, averaging **70.6**
-versus **38.0** for the strongest baseline. Ablations attribute the gain to
-modeling contact evolution as part of the predicted world state rather than to
-tactile conditioning alone: removing tactile world modeling reduces the
-four-task mean from **74.7** to **26.6** while keeping the same tactile features
-and action expert.
+## Repository layout
 
-## Release status
+```
+src/        modules authored by us, laid over the upstream tree
+configs/    the 16 configs behind the paper results
+tests/      unit and smoke tests
+patches/    diff against Genie-Envisioner-V1 @ d54425c4
+setup_upstream.sh
+```
 
-**Target: October 2026.** The code, checkpoints and data are being prepared for
-public release, and this repository is where they will land. Watch or star it to
-be notified.
+This repository does **not** redistribute Genie-Envisioner-V1, which carries no
+licence. `setup_upstream.sh` fetches it for you and reconstructs the full tree.
+See [NOTICE](NOTICE).
 
-| Component | Contents | Status |
-| --- | --- | --- |
-| Model and inference code | Visuo-tactile world model, tactile compressor, action expert | October 2026 |
-| Pretrained checkpoints | Tactile encoder and per-task policies | October 2026 |
-| Training code | Three-stage recipe: encoder adaptation, continual vision-to-touch learning, action expert | October 2026 |
-| Tactile interaction dataset | 4 hours of multi-finger tactile interaction used for encoder adaptation | October 2026 |
-| Task demonstrations | ~100 demonstrations per task across the six evaluation tasks | October 2026 |
-| Hardware and deployment guide | 22-DoF bimanual platform, fingertip sensor integration, calibration | October 2026 |
+## Installation
 
-Until then, the [project page](https://dextacwam.github.io/) hosts real-robot
-rollouts, world-model predictions, tactile visualisations and additional
-ablations.
+```bash
+git clone https://github.com/dextacwam/DexTacWAM.git
+cd DexTacWAM
+bash setup_upstream.sh          # clones upstream @ d54425c4, applies patch, overlays src/
+cd build
+pip install -r requirements.txt
+```
+
+Everything below is run from `build/`, which is the assembled tree. Training was
+developed on 4x H200 NVL; stage 2 and 3 need multi-GPU, stage 1 fits on one.
+
+Place the pretrained backbones where the configs expect them:
+
+```
+pretrained_models/ltx_video/
+pretrained_models/genie_envisioner/GE_base_fast_v0.1.safetensors
+```
+
+## Checkpoints and data
+
+| Component | Status |
+| --- | --- |
+| Tactile encoder and per-task policy checkpoints | October 2026 |
+| Tactile interaction dataset (4 h, encoder adaptation) | October 2026 |
+| Task demonstrations (~100 per task, six tasks) | October 2026 |
+
+Until these land you can still run the full pipeline on your own LeRobot-format
+corpus. Datasets go in `data/datasets_lerobot/<domain>/`, caches in
+`data/cache/<name>/`, run outputs in `outputs/`.
+
+## Data preparation
+
+Normalization statistics, written to the `stat_file` path each config names:
+
+```bash
+python scripts/calculate_statistics.py \
+    --data_root data/datasets_lerobot/<domain> \
+    --data_name <domain> \
+    --save_path configs/<task>/<domain>_relative_stats.json
+```
+
+Then the offline cache. Training reads decoded frames from it rather than
+re-decoding parquet every `__getitem__`, and the same cache serves both stage 2
+and stage 3:
+
+```bash
+python scripts/preprocess_dex_vtam_cache.py \
+    --data-root data/datasets_lerobot/<domain> \
+    --domain <domain> \
+    --cache-dir data/cache/<name> \
+    --add-flow
+```
+
+## Training
+
+The three stages run in order; each one's output is the next one's warm start.
+After finishing a stage, point the next config at the run directory you just
+produced — the paths committed here are from our runs and will not exist for you.
+
+**Stage 1 — tactile encoder adaptation.** Single GPU.
+
+```bash
+python -m runner.tactile_vae_trainer --config configs/stage1_tactile_encoder.yaml
+python -m runner.visual_vae_adapter_trainer --config configs/stage1_visual_vae_adapter.yaml
+```
+
+**Stage 2 — continual vision-to-touch learning.** Set `tactile_vae.model_path`
+to the stage 1 checkpoint first. 80k steps, measured at 2.47 s/it on 4x H200 NVL
+(~55 h); step 30000 is the stage 3 warm start.
+
+```bash
+torchrun --nnodes=1 --nproc_per_node=4 \
+    main.py \
+    --config_file configs/<task>/stage2_world_model.yaml \
+    --runner_class_path runner/tactile_dit_trainer.py \
+    --runner_class TactileDiTTrainer
+```
+
+**Stage 3 — action expert.** Set the world-model `model_path` to a stage 2
+`step_*` directory. The action expert is randomly initialised
+(`rand_init_action: true`); the world-model body is warm-started.
+
+```bash
+torchrun --nnodes=1 --nproc_per_node=4 \
+    main.py \
+    --config_file configs/<task>/stage3_action_expert.yaml \
+    --runner_class_path runner/tactile_dit_trainer.py \
+    --runner_class TactileDiTTrainer
+```
+
+`<task>` is one of `cube_place`, `cube_handover`, `wipe_whiteboard`, `tongs`,
+`bowl_unstack`, `bottle_cap`. The visual-only world-model ablations live in
+`configs/ablations/`.
+
+Note that `torchrun` may report exit code 120 on an otherwise successful run
+because of a cosmetic NCCL teardown race in accelerate + DeepSpeed. Treat the
+presence of the final `step_*` checkpoint as the success signal, not the exit
+code.
+
+## Evaluation
+
+Open-loop action evaluation against held-out episodes:
+
+```bash
+torchrun --nnodes=1 --nproc_per_node=1 \
+    main.py \
+    --config_file configs/<task>/stage3_action_expert.yaml \
+    --runner_class_path runner/tactile_inferencer.py \
+    --runner_class TactileInferencer \
+    --mode infer \
+    --checkpoint_path outputs/<stage3_run>/step_20000 \
+    --output_path outputs/eval/<task> \
+    --domain_name <domain> \
+    --n_validation 10 \
+    --n_chunk_action 30
+```
+
+`scripts/` also holds the analyses reported in the paper: world-model video
+quality (`eval_wm_video_quality.py`), contact recall (`eval_wm_contact_recall.py`),
+tactile flow visualisation (`eval_wm_tactile_flow_viz_offline.py`) and the
+view-compression benchmark (`bench_tactile_view_compression.py`).
+
+## Real-robot deployment
+
+Deployment code lives on the **`deploy` branch**, not on `main`. It is a
+server/client split: the policy server holds the world model and action expert
+on the GPU workstation, and a thin client on the robot streams observations and
+receives action chunks.
+
+```bash
+git checkout deploy
+```
+
+That branch adds `web_infer_scripts/` (policy server, robot client, offline
+replay client and the server health-contract tests) plus the rollout runbook and
+deployment gate checks under `docs/`. Keeping it separate means `main` stays
+free of hardware-specific dependencies for the Sharpa fingertip sensors and the
+Dexmate platform.
 
 ## Method
 
 ![Architecture](assets/architecture.png)
-
-Training proceeds in three stages:
 
 1. **Tactile-encoder adaptation.** A per-finger tactile encoder is adapted on
    four hours of tactile interaction data behind a frozen pretrained vision VAE.
@@ -97,10 +225,10 @@ hand-level latents, retaining 89.4% of pre-fusion contact recall while enabling
 
 ## License
 
-Released under the [MIT License](LICENSE).
+[MIT](LICENSE) for the code we authored. Third-party components keep their own
+licences; see [NOTICE](NOTICE).
 
 ## Contact
 
-Questions about the paper or the upcoming release are welcome by email:
 [lourent2@illinois.edu](mailto:lourent2@illinois.edu),
-[wzhan@berkeley.edu](mailto:wzhan@berkeley.edu).
+[wzhan@berkeley.edu](mailto:wzhan@berkeley.edu)

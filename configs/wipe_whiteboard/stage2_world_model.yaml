@@ -36,7 +36,7 @@
 #      standing invitation to share one cache between two different corpora
 #      and feed the wrong episodes into training.
 #
-#   C. STATS: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/
+#   C. STATS: configs/wipe_whiteboard/
 #             20260808_wipe_white_board_relative_stats.json  (NEW -- generate on
 #      before launching, via
 #        TASK=wipe_white_board bash scripts/calc_stats_relative_eef_rot6d.sh
@@ -56,7 +56,7 @@
 #
 # Output: B2 trainer ckpt at step 80000 (DiT safetensors + projector.pt),
 #         consumed by the paired with_wrist RELATIVE B3 yaml at
-#           configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/
+#           configs/wipe_whiteboard/
 #             action_model_0808_wipe_white_board_with_wrist_eef_relative_wm_bypass_shared_rmsnorm_long50000.yaml
 #         Replace the FILL_ME placeholder in that yaml's
 #         diffusion_model.model_path with this run's <TS>/step_<N> once a step
@@ -396,7 +396,7 @@ data:
     action_type: "relative_eef_rot6d"
     action_space: "eef"
     arm_layout: "bimanual"
-    stat_file: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/20260808_wipe_white_board_relative_stats.json
+    stat_file: configs/wipe_whiteboard/20260808_wipe_white_board_relative_stats.json
     state_key: state
     action_key: actions
     extra_parquet_index: False
@@ -443,7 +443,7 @@ data:
     action_type: "relative_eef_rot6d"
     action_space: "eef"
     arm_layout: "bimanual"
-    stat_file: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/20260808_wipe_white_board_relative_stats.json
+    stat_file: configs/wipe_whiteboard/20260808_wipe_white_board_relative_stats.json
     state_key: state
     action_key: actions
     extra_parquet_index: False
@@ -488,7 +488,7 @@ data:
       action_type: "relative_eef_rot6d"
       action_space: "eef"
       arm_layout: "bimanual"
-      stat_file: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/20260808_wipe_white_board_relative_stats.json
+      stat_file: configs/wipe_whiteboard/20260808_wipe_white_board_relative_stats.json
       state_key: state
       action_key: actions
       extra_parquet_index: False

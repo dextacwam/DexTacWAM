@@ -80,8 +80,7 @@ TRANSFORMER_PATH = os.path.join(
 )
 YAML_PATH = os.path.join(
     REPO_ROOT,
-    "configs", "ltx_model", "diverse_488",
-    "action_model_diverse_488_d488wm_bypass_shared_long50000.yaml",
+    "configs", "cube_handover", "stage3_action_expert.yaml",
 )
 
 

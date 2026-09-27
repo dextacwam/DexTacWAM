@@ -2,7 +2,7 @@
 """Publish a stage-3 action checkpoint to a Hugging Face model repo.
 
 Weights only. The config yaml and the normalization stats stay in git (the
-deployment checkout reads them from `configs/ltx_model/<domain>/`), so what
+deployment checkout reads them from `configs/<task>/`), so what
 goes to the Hub is the part git should not carry. The generated README pins
 the git commit and the repo-relative paths of both, because a checkpoint
 without its stat_file is not merely incomplete -- loading it against the
@@ -18,7 +18,7 @@ Usage
     # inspect only, no network
     python scripts/publish_action_ckpt_to_hf.py \\
         --ckpt-dir outputs/stage3_action_full_.../step_20000 \\
-        --config configs/ltx_model/0729_tong_right_only_eef_relative/action_model_...yaml \\
+        --config configs/cube_handover/stage3_action_expert.yaml \\
         --repo-id JensenYuan/DexTacWAM_tong \\
         --task-title "Pick up a cherry tomato with tongs (right arm)" \\
         --eval-md eval_artifacts/.../aggregate.md \\

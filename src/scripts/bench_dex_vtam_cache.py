@@ -26,7 +26,7 @@ Usage::
       --data-root data/pick_cube/lerobot_dataset_right_hand_pick_cube_100_episodes \\
       --domain    right_hand_pick_cube \\
       --cache-dir data/cache/right_hand_pick_cube_v1_test \\
-      --stat-file configs/ltx_model/<task>/<task>_stats.json \\
+      --stat-file configs/tongs/20260801_placed_tong_right_only_relative_stats.json \\
       --episodes 0,1,2 --iters 30 --warmup 5
 
     python scripts/bench_dex_vtam_cache.py --dataloader \\

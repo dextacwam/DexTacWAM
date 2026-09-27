@@ -1,9 +1,9 @@
 # =============================================================================
 # Stage 1 Tactile VAE -- v4 production training config 
 # =============================================================================
-# Forked from stage1_tactile_encoder.yaml. v4 keeps v3's training corpus,
-# architecture, optimizer, KL formulation, and dataset definitions BYTE-
-# IDENTICAL; the only training-side changes are:
+# Forked from the v3 baseline, which it matches byte-identically in training
+# corpus, architecture, optimizer, KL formulation and dataset definitions.
+# The only training-side changes are:
 #
 #   1. Magnitude-aware sqrt-smoothed flow loss (tactile_vae.config.flow_loss).
 #      Up-weights pixels with high physical-unit GT flow magnitude (relative

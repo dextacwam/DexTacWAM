@@ -660,7 +660,7 @@ def parse_args():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "--config",
-        default="configs/ltx_model/diverse_488/action_model_diverse_488_tactile_v0d.yaml",
+        default="configs/cube_handover/stage3_action_expert.yaml",
         help="action-model YAML to read dims from (dims only; weights random).",
     )
     p.add_argument(

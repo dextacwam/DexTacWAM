@@ -347,7 +347,7 @@ data:
     action_type: "relative_eef_rot6d"
     action_space: "eef"
     arm_layout: "bimanual"
-    stat_file: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/20260808_wipe_white_board_relative_stats.json
+    stat_file: configs/wipe_whiteboard/20260808_wipe_white_board_relative_stats.json
     state_key: state
     action_key: actions
     extra_parquet_index: False
@@ -376,7 +376,7 @@ data:
     action_type: "relative_eef_rot6d"
     action_space: "eef"
     arm_layout: "bimanual"
-    stat_file: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/20260808_wipe_white_board_relative_stats.json
+    stat_file: configs/wipe_whiteboard/20260808_wipe_white_board_relative_stats.json
     state_key: state
     action_key: actions
     extra_parquet_index: False
@@ -405,7 +405,7 @@ data:
       action_type: "relative_eef_rot6d"
       action_space: "eef"
       arm_layout: "bimanual"
-      stat_file: configs/ltx_model/0808_wipe_white_board_with_wrist_eef_relative/20260808_wipe_white_board_relative_stats.json
+      stat_file: configs/wipe_whiteboard/20260808_wipe_white_board_relative_stats.json
       state_key: state
       action_key: actions
       extra_parquet_index: False
