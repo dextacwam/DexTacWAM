@@ -26,7 +26,14 @@ git -C "$DEST" apply "$HERE/patches/genie-envisioner-${UPSTREAM_SHA:0:8}.patch"
 
 echo "==> overlaying DexTacWAM modules"
 cp -r "$HERE/src/." "$DEST/"
-ln -s "$HERE/configs" "$DEST/configs/dextacwam"
+
+# Link each config entry into upstream's configs/ rather than nesting them under
+# a subdirectory: the configs name their stat_file as configs/<task>/... and the
+# documented commands use the same prefix, so both have to resolve from the root
+# of the assembled tree. Symlinks, not copies, so edits land back in the repo.
+for item in "$HERE"/configs/*; do
+  ln -s "$item" "$DEST/configs/$(basename "$item")"
+done
 ln -s "$HERE/tests" "$DEST/tests_dextacwam"
 
 cat <<EOF

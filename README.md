@@ -86,7 +86,10 @@ corpus. Datasets go in `data/datasets_lerobot/<domain>/`, caches in
 
 ## Data preparation
 
-Normalization statistics, written to the `stat_file` path each config names:
+The normalization statistics for the six evaluation tasks are committed next to
+their configs, so you only need to regenerate them if you bring your own corpus.
+They must match the checkpoint you serve — different statistics silently
+de-normalise actions wrong rather than failing:
 
 ```bash
 python scripts/calculate_statistics.py \
