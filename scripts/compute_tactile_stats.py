@@ -22,14 +22,14 @@ Usage (single root, v1 form)::
     python scripts/compute_tactile_stats.py \\
         --data_root data/wipe_plate \\
         --episodes 0..19 \\
-        --out_dir DexVTAM/data/stats/wipe_plate
+        --out_dir data/stats/wipe_plate
 
 Usage (multi-root, v2 data-scaling)::
 
     python scripts/compute_tactile_stats.py \\
         --data_roots data/datasets/wipe_plate data/datasets/wrap_adhesive \\
         --episode_lists "0..19" "0..34" \\
-        --out_dir DexVTAM/data/stats/wipe_plate_plus_wrap
+        --out_dir data/stats/wipe_plate_plus_wrap
 
 The single- and multi-root forms are mutually exclusive. In multi-root mode,
 all listed episodes from all listed roots are pooled into one population so

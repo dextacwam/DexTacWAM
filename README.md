@@ -133,12 +133,25 @@ The three stages run in order; each one's output is the next one's warm start.
 After finishing a stage, point the next config at the run directory you just
 produced — the paths committed here are from our runs and will not exist for you.
 
-**Stage 1 — tactile encoder adaptation.** Single GPU. The pose and flow
-statistics both stage 1 configs need are committed under `data/stats/`; only
-the corpora themselves are still to come.
+**Stage 1 — tactile encoder adaptation.** Single GPU, and all of it runs on the
+same `488_diverse_episodes` corpus whose statistics are committed under
+`data/stats/diverse_488/`.
+
+The tactile encoder takes two runs. The first trains the finger-set-transformer
+adapter from scratch for 30k steps; the second adds pose injection and the
+TimeSformer head and continues for 60k, warm-started from the first at
+`step_00030000` with the new heads zero-initialised so step 0 is bit-equal to
+where the base run left off. Point `tactile_vae.model_path` in the second config
+at the run directory the first produced.
 
 ```bash
+python -m runner.tactile_vae_trainer --config configs/stage1_tactile_encoder_base.yaml
 python -m runner.tactile_vae_trainer --config configs/stage1_tactile_encoder.yaml
+```
+
+The visual VAE adapter is independent of those two and can run in parallel:
+
+```bash
 python -m runner.visual_vae_adapter_trainer --config configs/stage1_visual_vae_adapter.yaml
 ```
 

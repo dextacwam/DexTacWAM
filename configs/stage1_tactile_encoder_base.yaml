@@ -1,6 +1,6 @@
 train_data_class: TactileDataset
 train_data_class_path: data/tactile_dataset.py
-output_dir: outputs/stage1_lite_v0d_full
+output_dir: outputs/stage1_lite_v0c_full
 sub_folder: null
 logging_dir: tb
 visual_vae_path: pretrained_models/ltx_video
@@ -27,8 +27,8 @@ lr_num_cycles: 1
 lr_power: 1.0
 batch_size: 16
 gradient_checkpointing: false
-train_epochs: 7
-train_steps: 60000
+train_epochs: 5
+train_steps: 30000
 max_grad_norm: 1.0
 steps_to_log: 25
 steps_to_val: 1000
@@ -46,27 +46,22 @@ wandb:
   entity: null
   name: null
   tags:
-  - stage1_lite_v0d
+  - stage1_lite_v0c
   - full_488
   - frozen_visual_vae
   - finger_set_transformer
   - diverse_488_episodes
-  - pose_injection
-  - timesformer
-  - warmstart_v0c_a
-  - train_60k
-  notes: "Stage 1 lite v0d: v0c-A FingerSetTransformerAdapter + pose injection + TimeSformer\
-    \ post-adapter + AuxPoseDecoder dropped. Warm-started from v0c-A step_30000 with\
-    \ alpha_pose=alpha_temp=0 so step 0 is bit-equal v0c-A. Same 488-ep corpus, same\
-    \ val split, same optimizer + LR schedule as v0c-A; trained for 60k steps (vs\
-    \ v0c-A's canonical 30k) so the v0d pose / temporal heads have time to ramp past\
-    \ the alpha-zero init. Apples-to-apples vs v0c-A on val/recall_post and val/flow_mse_active_post:\n\
-    \  * at step 30k vs canonical v0c-A_full step 30k,\n  * at step 60k vs v0c-A_full_extend60k\
-    \ step 60k.\nAcceptance gate: >=20% gap closure on val/recall_post (T=1: 0.656->0.71+,\
-    \ T=9: 0.575->0.62+) at step 30k or step 60k."
+  - adapter_capacity_v2
+  notes: 'Stage 1 lite v0c-A: deeper FingerSetTransformerAdapter (3 layers, 8 heads,
+    FFN 1024) on the same 488-ep corpus and same loss as v0_full. Tests the adapter-capacity
+    hypothesis raised by v0_full step 30k (gap=0.29 widening over training, suggesting
+    the 1-layer attention adapter is the structural bottleneck). Same data, same split
+    (train 0..463, val 464..487), same optimizer + LR schedule, same train_steps=30000,
+    same val protocol. Apples-to-apples comparison with v0_full + v0b at steps 12k
+    / 20k / 30k.'
   mode: online
 tactile_vae:
-  model_path: outputs/stage1_lite_v0c_full/2026_05_14_18_42_51/checkpoints/step_00030000/model.pt
+  model_path: null
   config:
     adapter_kind: finger_set_transformer
     latent_channels: 128
@@ -83,16 +78,9 @@ tactile_vae:
     gray_to_rgb_init: ones_repeat
     vae_latent_mode: mean
     enable_pre_fuse: true
-    adapter_use_pose_injection: true
-    adapter_pose_dim: 22
-    adapter_use_timesformer: true
-    adapter_timesformer_num_blocks: 2
-    adapter_timesformer_num_heads: 8
-    adapter_timesformer_ffn_dim: 512
-    adapter_finger_dropout: 0.0
     lambda_loc: 1.0
     lambda_loc_pre: 0.3
-    lambda_pose: 0.0
+    lambda_pose: 0.1
     lambda_kl: 0.0
     flow_loss:
       enabled: true
@@ -589,7 +577,6 @@ data:
     flow_stats_path: data/stats/diverse_488/flow_stats.json
     pose_stats_path: data/stats/diverse_488/pose_stats.json
     cache_episodes_in_memory: true
-    pose_mode: per_frame
   val:
     datasets:
     - data_root: data/datasets/488_diverse_episodes
@@ -627,4 +614,3 @@ data:
     flow_stats_path: data/stats/diverse_488/flow_stats.json
     pose_stats_path: data/stats/diverse_488/pose_stats.json
     cache_episodes_in_memory: true
-    pose_mode: per_frame
