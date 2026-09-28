@@ -1,7 +1,7 @@
 DexTacWAM
 Copyright 2026 The DexTacWAM Authors
 
-This repository is not under a single licence. Files carry a licence notice in
+This repository is not under a single license. Files carry a license notice in
 their own header; the summary below says which applies where.
 
 
@@ -41,7 +41,7 @@ ShareAlike carries forward:
 
 The upstream files two of these came from (data/libero_dataset.py and the LIBERO
 and CALVIN helpers) are not shipped here, since nothing in this repository uses
-them. That does not change the licence of the adaptations.
+them. That does not change the license of the adaptations.
 
 Using those files commercially is not permitted by this repository.
 
