@@ -1,3 +1,6 @@
+# Modified by the DexTacWAM Authors, 2026.
+# Originally from Genie-Envisioner (AgibotTech) at commit d54425c4.
+
 import os, random, math
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 

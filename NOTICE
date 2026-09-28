@@ -7,7 +7,22 @@ commit d54425c4d0ba9d56b33adc4bfe5e5187e5335603. DexTacWAM builds directly on
 that codebase, as does FAWAM (https://github.com/HaotianHehaha/FAWAM), which
 released the same lineage under the MIT License.
 
-The following files carry upstream code that the DexTacWAM authors modified:
+Third-Party Software
+--------------------
+
+Portions of this software are derived from or incorporate code from
+Genie-Envisioner and related Apache-2.0-licensed components, including
+software originally developed by Hugging Face, Lightricks, Genmo, NVIDIA,
+Stability AI and the Wan Team.
+
+Applicable copyright and license notices are retained in the corresponding
+source files.
+
+Modifications
+-------------
+
+Files modified by the DexTacWAM authors carry a modification notice in their
+own source headers. They are:
 
     main.py
     models/action_patches/patches.py
