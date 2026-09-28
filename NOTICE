@@ -1,30 +1,58 @@
 DexTacWAM
 Copyright 2026 The DexTacWAM Authors
 
-This product includes software developed by AgibotTech as part of
-Genie-Envisioner (https://github.com/AgibotTech/Genie-Envisioner-V1), taken at
-commit d54425c4d0ba9d56b33adc4bfe5e5187e5335603. DexTacWAM builds directly on
-that codebase, as does FAWAM (https://github.com/HaotianHehaha/FAWAM), which
-released the same lineage under the MIT License.
+This repository is not under a single licence. Files carry a licence notice in
+their own header; the summary below says which applies where.
 
-Third-Party Software
---------------------
 
-Portions of this software are derived from or incorporate code from
-Genie-Envisioner and related Apache-2.0-licensed components, including
-software originally developed by Hugging Face, Lightricks, Genmo, NVIDIA,
-Stability AI and the Wan Team.
+Apache License 2.0
+------------------
 
-Applicable copyright and license notices are retained in the corresponding
-source files. Where an upstream notice had been dropped before the code
-reached us, it has been restored: models/action_patches/patches.py derives
-from the LTX-Video transformer in diffusers and now carries that attribution.
+Original DexTacWAM work: the tactile encoder, compressor and projector under
+models/tactile_models/, the stage 1 trainers, configs/, tests/ and the analysis
+scripts written for this project.
+
+Also the code taken from Diffusers, LTX-Video, Cosmos and openpi, which
+Genie-Envisioner redistributes under Apache 2.0 and which lives under:
+
+    models/ltx_models/
+    models/cosmos_models/
+    models/pipeline/
+    web_infer_utils/openpi_client/
+
+Original copyright notices are retained in those files, including work by
+Hugging Face, Lightricks, Genmo, NVIDIA, Stability AI and the Wan Team.
+
+
+CC BY-NC-SA 4.0 -- NonCommercial
+--------------------------------
+
+Genie-Envisioner (https://github.com/AgibotTech/Genie-Envisioner-V1) at commit
+d54425c4d0ba9d56b33adc4bfe5e5187e5335603 licenses everything outside the four
+directories above under CC BY-NC-SA 4.0. Those files are redistributed here
+under the same terms, and so are the DexTacWAM files adapted from them, because
+ShareAlike carries forward:
+
+    runner/tactile_dit_trainer.py   adapted from runner/ge_trainer.py
+    runner/tactile_inferencer.py    adapted from runner/ge_inferencer.py
+    data/dex_vtam_dataset.py        adapted from data/libero_dataset.py
+
+Using those files commercially is not permitted by this repository.
+
+One file sits awkwardly across the boundary. models/action_patches/patches.py
+falls outside the four Apache directories, so Genie-Envisioner's statement puts
+it under CC BY-NC-SA 4.0, but its ActionTransformerBlock is demonstrably derived
+from the LTX-Video transformer in Diffusers, which is Apache 2.0. The Diffusers
+notice is restored on the file and the more restrictive terms are marked on it
+as well; treat it as NonCommercial unless you have reason to do otherwise.
+
 
 Modifications
 -------------
 
 Files modified by the DexTacWAM authors carry a modification notice in their
-own source headers. They are:
+own source headers, as Apache 2.0 section 4(b) requires for the Apache-licensed
+ones. They are:
 
     main.py
     models/action_patches/patches.py
@@ -34,15 +62,6 @@ own source headers. They are:
     scripts/get_statistics.py
     utils/__init__.py
     utils/model_utils.py
-
-Everything under the following paths is original work by the DexTacWAM authors:
-
-    models/tactile_models/
-    runner/tactile_*.py, runner/visual_vae_adapter_trainer.py
-    data/dex_vtam_dataset.py, data/tactile_dataset.py, data/utils/
-    configs/ (except configs/ltx_model/ and configs/cosmos_model/)
-    scripts/ (the DexTacWAM analysis and preprocessing scripts)
-    tests/
 
 The pretrained LTX-Video and Genie-Envisioner weights that the configs expect
 are distributed by their respective authors under their own terms and are not

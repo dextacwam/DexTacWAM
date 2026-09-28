@@ -18,7 +18,7 @@
 
 [![Paper](https://img.shields.io/badge/arXiv-2609.24976-b31b1b.svg)](https://arxiv.org/abs/2609.24976)
 [![Project Page](https://img.shields.io/badge/Project-Page-1f6feb.svg)](https://dextacwam.github.io/)
-[![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache_2.0%20%2F%20CC_BY--NC--SA_4.0-green.svg)](LICENSE)
 
 </div>
 
@@ -229,9 +229,18 @@ hand-level latents, retaining 89.4% of pre-fusion contact recall while enabling
 
 ## License
 
-[Apache License 2.0](LICENSE). This repository includes code from
-Genie-Envisioner; the files we modified and the parts that are original to
-DexTacWAM are itemised in [NOTICE](NOTICE).
+This repository is not under a single licence. Original DexTacWAM code, and
+the Diffusers / LTX-Video / Cosmos / openpi code it builds on, are under the
+[Apache License 2.0](LICENSES/Apache-2.0.txt).
+
+Genie-Envisioner licenses everything outside `models/ltx_models`,
+`models/cosmos_models`, `models/pipeline` and `web_infer_utils/openpi_client`
+under [CC BY-NC-SA 4.0](LICENSES/CC-BY-NC-SA-4.0.txt). Those files, and the
+three DexTacWAM files substantially adapted from them, stay under that licence
+because of its ShareAlike term, and **may not be used commercially**.
+
+Every file states which licence applies in its own header, and [NOTICE](NOTICE)
+maps it out.
 
 ## Contact
 
