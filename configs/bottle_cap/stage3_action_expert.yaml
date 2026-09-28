@@ -28,7 +28,7 @@
 # The cache stores RAW action/state (pre-normalization), so relativization
 # happens after cache read; the with_wrist cache only adds the two wrist RGB
 # views vs the no_wrist cache.
-# See DexVTAM/docs/relative_eef_rot6d_design.md and data/utils/relative_action.py.
+# See data/utils/relative_action.py for the construction.
 # =============================================================================
 # Stage 3 (B3) -- action_full + TACTILE ON + CHIP-WM warmstart (bypass) + SHARED
 #                 + KV RMSNorm  LONG50000  (reference run)

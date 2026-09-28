@@ -7,10 +7,9 @@
 
 """Stage 2 / Stage 3 tactile-into-DiT trainer (fork of ``runner/ge_trainer.py``).
 
-Spec: ``stage_2_design_doc_bc5b3fc0.plan.md`` (LOCKED v2.2 with corrected
-phase enum: ``video_only`` -> ``world_model_only``; Stage 3 phases
-``action_only`` / ``action_full`` are first-class legal with or without
-tactile views).
+Phase enum: ``world_model_only`` for Stage 2; ``action_only`` and
+``action_full`` for Stage 3, either of which is legal with or without
+tactile views.
 
 F8 decision (trainer-local hook):
     Visual + tactile latents are stacked along the ``(B*V)`` batch axis BEFORE

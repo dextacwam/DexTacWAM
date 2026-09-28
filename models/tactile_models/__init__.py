@@ -1,5 +1,4 @@
 # Stage 1 Tactile VAE building blocks and main modules.
-# See docs/tactile_vae_stage1.md for design.
 
 from .projector import TactileProjector
 from .tactile_modules import (

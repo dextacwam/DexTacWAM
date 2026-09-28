@@ -42,8 +42,7 @@ Hard requirements
   bypass mode the predicted latent is in projected space and would need
   the (non-contractive on v0d) 1st-order inverse used by
   ``eval_wm_contact_recall.py``; that path is intentionally NOT enabled
-  here because it produces non-interpretable flow viz (see Section 7 of
-  ``docs/b2_b3_v0d_proj_bypass_consistency_check.md``).
+  here because it produces non-interpretable flow viz.
 
 If any condition fails, the script exits with code 2 and a descriptive
 error.

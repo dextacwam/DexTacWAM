@@ -38,7 +38,7 @@
 # The cache stores RAW action/state (pre-normalization), so relativization
 # happens after cache read; the same cache therefore serves both the B2 WM and
 # this B3 action model.
-# See DexVTAM/docs/relative_eef_rot6d_design.md and data/utils/relative_action.py.
+# See data/utils/relative_action.py for the construction.
 # =============================================================================
 # Stage 3 (B3) -- action_full + TACTILE ON + wipe_white_board-WM warmstart (bypass)
 #                 + SHARED + KV RMSNorm  LONG50000  (reference run)

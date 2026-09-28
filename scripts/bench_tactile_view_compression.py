@@ -23,7 +23,7 @@ deployment forward path (``LTXVideoTransformer3DModel.forward`` with the same
 kwargs ``custom_pipeline.infer`` uses) while sweeping ``n_view``. Because the
 cost is entirely shape-driven, random weights + synthetic latents are a valid
 and standard way to isolate the systems cost -- this is NOT an accuracy
-benchmark. See ``docs/tactile_view_compression_benchmark.md``.
+benchmark.
 
 Two things are measured:
   1. DiT / action-expert cost as a function of ``n_view`` (main result).

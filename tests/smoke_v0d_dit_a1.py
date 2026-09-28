@@ -66,7 +66,7 @@ import torch
 import torch.nn as nn
 
 
-# Make the `DexVTAM/` root importable so `runner.tactile_dit_trainer` and
+# Make the repository root importable so `runner.tactile_dit_trainer` and
 # `models.tactile_models.visual_vae_adapter` resolve regardless of the
 # user's cwd.
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))

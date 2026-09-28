@@ -6,7 +6,7 @@ Top-level wrapper :class:`TactileVAE` and its three sub-modules:
   ``N`` interleaved transformer blocks (``CrossAttn(pose) → SelfAttn(finger)
   → FFN``) and an LTX-style ``mu/logvar`` head. Produces a per-finger
   spatial-temporal latent ``z (B, 5, 128, T_lat, 3, 4)`` that satisfies
-  the C1–C4 alignment contracts from ``docs/tactile_vae_stage1.md``.
+  the C1–C4 alignment contracts.
 
 * :class:`TactileFlowDecoder` — per-finger pixel-shuffle upsampling stack
   built from LTX modules (``LTXVideoResnetBlock3d`` + ``LTXVideoUpsampler3d``)
