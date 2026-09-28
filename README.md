@@ -18,6 +18,7 @@
 
 [![Paper](https://img.shields.io/badge/arXiv-2609.24976-b31b1b.svg)](https://arxiv.org/abs/2609.24976)
 [![Project Page](https://img.shields.io/badge/Project-Page-1f6feb.svg)](https://dextacwam.github.io/)
+[![HuggingFace](https://img.shields.io/badge/%F0%9F%A4%97-Weights%20%26%20Data-ffcc4d.svg)](https://huggingface.co/collections/JensenYuan/dextacwam-6aba3aa25d3362d882cdefbc)
 [![License](https://img.shields.io/badge/License-Apache_2.0%20%2F%20CC_BY--NC--SA_4.0-green.svg)](LICENSE)
 
 </div>
@@ -37,6 +38,23 @@ pose-aware tactile compressor, and injects the tactile latent into a video
 diffusion world model for joint visuo-tactile world modeling. Across six
 contact-rich tasks on a 22-DoF bimanual platform it averages **70.6** against
 **38.0** for the strongest baseline.
+
+The compressor is what makes that affordable: it reduces ten fingertip streams
+to two hand-level latents, retaining 89.4% of pre-fusion contact recall while
+training 2.26x faster and running inference 1.29x faster.
+
+## Release
+
+- Full training and inference code for all three stages
+- Configs for the six real-robot tasks and the ablations
+- The 488-episode tactile pretraining corpus
+- Roughly 100 demonstrations for each of the six evaluation tasks
+- The pretrained stage 1 multi-finger tactile encoder
+- Real-robot deployment and evaluation code
+
+Not included: stage 2 world models and stage 3 action experts. Those are cheap
+to train from what is here and carry no information the configs do not — see
+[Checkpoints and data](#checkpoints-and-data).
 
 ## Repository layout
 
@@ -60,20 +78,46 @@ cd DexTacWAM
 pip install -r requirements.txt
 ```
 
-Training was developed on 4x H200 NVL; stage 2 and 3 need multi-GPU, stage 1
-fits on one.
+The released configs were developed and tested on 4x H200 NVL. Stage 1 fits on
+a single GPU; stages 2 and 3 were run with distributed multi-GPU training, and
+the batch sizes in the configs assume it.
 
-Place the pretrained backbones where the configs expect them:
+Then fetch the three sets of weights the configs expect. Ours first:
+
+```bash
+hf download JensenYuan/DexTacWAM_multi_finger_tactile_encoder \
+    --local-dir pretrained_models/dextacwam_tactile_encoder
+```
+
+Then the upstream backbone from Genie-Envisioner, and the LTX-Video VAE,
+tokenizer and text encoder it is built on:
+
+```bash
+hf download agibot-world/Genie-Envisioner-v1.0 GE_base_fast_v0.1.safetensors \
+    --local-dir pretrained_models/genie_envisioner
+
+hf download Lightricks/LTX-Video --local-dir pretrained_models/ltx_video \
+    --include "model_index.json" "vae/*" "tokenizer/*" "text_encoder/*"
+```
+
+The `--include` filter is deliberate: post-training needs only those four
+pieces, not the full LTX-Video checkpoint. The result should look like this:
 
 ```
-pretrained_models/ltx_video/
+pretrained_models/ltx_video/{model_index.json,vae/,tokenizer/,text_encoder/}
 pretrained_models/genie_envisioner/GE_base_fast_v0.1.safetensors
+pretrained_models/dextacwam_tactile_encoder/model.pt
 ```
+
+`GE_base_fast_v0.1.safetensors` is distributed under the LTX-Video Open Weights
+License rather than Apache 2.0; check that it permits your use.
 
 ## Checkpoints and data
 
-Everything lives under the [DexTacWAM collection on HuggingFace](https://huggingface.co/JensenYuan),
-Apache 2.0 like this repository.
+All released checkpoints and datasets live in the
+[DexTacWAM collection on HuggingFace](https://huggingface.co/collections/JensenYuan/dextacwam-6aba3aa25d3362d882cdefbc)
+and are released under Apache 2.0. The source in this repository is under
+several licenses; see [License](#license).
 
 The stage 1 tactile encoder is released as weights, because it is expensive to
 reproduce and every downstream stage depends on it:
@@ -101,7 +145,7 @@ not try to train a policy on it.
 
 **We do not distribute stage 2 world models or stage 3 action experts.** Those
 are yours to train — stage 2 warm-starts from Genie-Envisioner's public
-`GE_base_fast_v0.1.safetensors`, and the action expert is randomly initialised
+`GE_base_fast_v0.1.safetensors`, and the action expert is randomly initialized
 anyway, so nothing about our copies is load-bearing. The configs under
 `configs/<task>/` are the ones we used, checkpoint selection included.
 
@@ -115,7 +159,7 @@ statistics you need to regenerate.
 The normalization statistics for the six evaluation tasks are committed next to
 their configs, so you only need to regenerate them if you bring your own corpus.
 They must match the checkpoint you serve — different statistics silently
-de-normalise actions wrong rather than failing:
+de-normalize actions wrong rather than failing:
 
 ```bash
 python scripts/get_statistics.py \
@@ -161,36 +205,39 @@ The three stages run in order; each one's output is the next one's warm start.
 After finishing a stage, point the next config at the run directory you just
 produced — the paths committed here are from our runs and will not exist for you.
 
-### Bringing DexTacWAM to your own task
+### Recommended workflow for a new task
 
-**Skip stage 1.** It adapts the tactile encoder to the Sharpa Wave hands in
-general, not to any task, so there is nothing task-specific to rerun. Download
-the [released encoder](https://huggingface.co/JensenYuan/DexTacWAM_multi_finger_tactile_encoder),
-point `tactile_vae.model_path` at it, and start at stage 2. That saves the two
-runs below and the 282 GB corpus they need.
+**Start from stage 2.** Stage 1 performs task-agnostic tactile encoder
+adaptation for the Sharpa Wave hands and does not need to be repeated per
+downstream task. Point `tactile_vae.model_path` at the encoder you downloaded
+during installation and train stage 2 on your own demonstrations. That skips
+the two stage 1 runs below and the 282 GB corpus they need.
 
-From there, **30k steps of stage 2 and 10k of stage 3** is enough to get a
-working policy on a new task with roughly 100 demonstrations. The committed
-configs run far longer (`train_steps: 1000000` and `50000`) because we let them
-run and selected checkpoints afterwards; they are ceilings, not targets. Stop
-early and evaluate.
+In our experiments, roughly **30k stage 2 steps and 10k stage 3 steps** were
+typically sufficient to obtain a working policy from about 100 demonstrations
+per task. The committed configs run far longer (`train_steps: 1000000` and
+`50000`) because we let them run and selected checkpoints afterwards; treat
+those as ceilings, not targets. Stop early and evaluate.
 
 The rest of this section is the full recipe, which is what you want if you are
-reproducing the paper rather than building on it. Note that even then stage 1 is
-optional: the released encoder is the one the paper's results were produced
-with, so you only need to rerun it if the encoder itself is what you are
-studying.
+reproducing the paper rather than building on it. Even then stage 1 is optional:
+the released encoder is the one the paper's results were produced with, so rerun
+it only if the encoder itself is what you are studying.
+
+> **Naming note.** The paper calls stage 1 *tactile encoder adaptation*. For
+> historical reasons the implementation is named `visual_vae_adapter` in this
+> codebase — the encoder is an adapter bolted onto a frozen LTX-Video VAE trunk,
+> and the name stuck.
 
 **Stage 1 — tactile encoder adaptation.** Single GPU, on the
 `488_diverse_episodes` corpus whose statistics are committed under
 `data/stats/diverse_488/`.
 
-What the paper calls the tactile encoder is a finger-set-transformer adapter
-bolted onto a frozen LTX-Video VAE trunk, so in the code it is the visual VAE
-adapter. Training it takes two runs. The first trains the adapter from scratch
+The encoder is a finger-set-transformer adapter on a frozen LTX-Video VAE
+trunk. Training it takes two runs. The first trains the adapter from scratch
 for 30k steps with an auxiliary pose head. The second continues for 60k,
 warm-started from the first at `step_00030000`, adding pose injection and a
-TimeSformer temporal head zero-initialised so step 0 is bit-equal to where the
+TimeSformer temporal head zero-initialized so step 0 is bit-equal to where the
 base run left off, and drops the pose loss.
 
 ```bash
@@ -215,7 +262,7 @@ torchrun --nnodes=1 --nproc_per_node=4 \
 ```
 
 **Stage 3 — action expert.** Set the world-model `model_path` to a stage 2
-`step_*` directory. The action expert is randomly initialised
+`step_*` directory. The action expert is randomly initialized
 (`rand_init_action: true`); the world-model body is warm-started.
 
 ```bash
@@ -255,7 +302,7 @@ torchrun --nnodes=1 --nproc_per_node=1 \
 
 `scripts/` also holds the analyses reported in the paper: world-model video
 quality (`eval_wm_video_quality.py`), contact recall (`eval_wm_contact_recall.py`),
-tactile flow visualisation (`eval_wm_tactile_flow_viz_offline.py`) and the
+tactile flow visualization (`eval_wm_tactile_flow_viz_offline.py`) and the
 view-compression benchmark (`bench_tactile_view_compression.py`).
 
 ## Real-robot deployment
@@ -325,7 +372,7 @@ means replacing the client and the observation packing, not the server.
    extended to joint visuo-tactile prediction using roughly 100 demonstrations
    per task, without tactile midtraining of the video backbone, and retains
    visual prediction quality within 0.5 dB of its vision-only counterpart.
-3. **Action expert training.** A randomly initialised action expert is trained
+3. **Action expert training.** A randomly initialized action expert is trained
    on the same demonstrations, consuming predictive visuo-tactile features from
    a single world-model forward pass.
 
@@ -347,18 +394,23 @@ hand-level latents, retaining 89.4% of pre-fusion contact recall while enabling
 
 ## License
 
-This repository is not under a single licence. Original DexTacWAM code, and
+This repository is not under a single license. Original DexTacWAM code, and
 the Diffusers / LTX-Video / openpi code it builds on, are under the
 [Apache License 2.0](LICENSES/Apache-2.0.txt).
 
 Genie-Envisioner licenses everything outside `models/ltx_models`,
 `models/pipeline` and `web_infer_utils/openpi_client`
 under [CC BY-NC-SA 4.0](LICENSES/CC-BY-NC-SA-4.0.txt). Those files, and the
-three DexTacWAM files substantially adapted from them, stay under that licence
+three DexTacWAM files substantially adapted from them, stay under that license
 because of its ShareAlike term, and **may not be used commercially**.
 
-Every file states which licence applies in its own header, and [NOTICE](NOTICE)
+Every file states which license applies in its own header, and [NOTICE](NOTICE)
 maps it out.
+
+The released checkpoint and datasets on HuggingFace are Apache 2.0. The
+upstream weights you download during installation are not ours to license:
+`GE_base_fast_v0.1.safetensors` and the LTX-Video components come under the
+LTX-Video Open Weights License.
 
 ## Contact
 
