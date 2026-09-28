@@ -161,6 +161,26 @@ The three stages run in order; each one's output is the next one's warm start.
 After finishing a stage, point the next config at the run directory you just
 produced — the paths committed here are from our runs and will not exist for you.
 
+### Bringing DexTacWAM to your own task
+
+**Skip stage 1.** It adapts the tactile encoder to the Sharpa Wave hands in
+general, not to any task, so there is nothing task-specific to rerun. Download
+the [released encoder](https://huggingface.co/JensenYuan/DexTacWAM_multi_finger_tactile_encoder),
+point `tactile_vae.model_path` at it, and start at stage 2. That saves the two
+runs below and the 282 GB corpus they need.
+
+From there, **30k steps of stage 2 and 10k of stage 3** is enough to get a
+working policy on a new task with roughly 100 demonstrations. The committed
+configs run far longer (`train_steps: 1000000` and `50000`) because we let them
+run and selected checkpoints afterwards; they are ceilings, not targets. Stop
+early and evaluate.
+
+The rest of this section is the full recipe, which is what you want if you are
+reproducing the paper rather than building on it. Note that even then stage 1 is
+optional: the released encoder is the one the paper's results were produced
+with, so you only need to rerun it if the encoder itself is what you are
+studying.
+
 **Stage 1 — tactile encoder adaptation.** Single GPU, on the
 `488_diverse_episodes` corpus whose statistics are committed under
 `data/stats/diverse_488/`.
@@ -240,20 +260,60 @@ view-compression benchmark (`bench_tactile_view_compression.py`).
 
 ## Real-robot deployment
 
-Deployment code lives on the **`deploy` branch**, not on `main`. It is a
-server/client split: the policy server holds the world model and action expert
-on the GPU workstation, and a thin client on the robot streams observations and
-receives action chunks.
+**You are on the `deploy` branch.** It is `main` plus the policy servers,
+robot clients and operational docs under `web_infer_scripts/` and `docs/`.
+Install exactly as above.
+
+Deployment is a server/client split. The policy server holds the world model and
+action expert on the GPU workstation; a thin client on the robot streams
+observations and receives action chunks over HTTP.
+
+**1. Dry-run the layout contract.** Numpy-only, no GPU, no torch — it runs on a
+login node and catches action/state mis-slicing before any hardware moves:
 
 ```bash
-git checkout deploy
+python web_infer_scripts/dryrun_relative_server.py \
+    -c configs/<task>/stage3_action_expert.yaml
 ```
 
-That branch adds `web_infer_scripts/` (policy server, robot client, offline
-replay client and the server health-contract tests) plus the rollout runbook and
-deployment gate checks under `docs/`. Keeping it separate means `main` stays
-free of hardware-specific dependencies for the Sharpa fingertip sensors and the
-Dexmate platform.
+Expect `[dryrun] ALL CHECKS PASSED`.
+
+**2. Serve the policy.** `TASK` is a `task_registry` id
+(`python3 -m data.utils.task_registry --list`); `STEP` selects which stage 3
+checkpoint to serve. Omit `STEP` to list what is available and exit:
+
+```bash
+TASK=bowl STEP=10000 bash web_infer_scripts/run_server_tactile_relative.sh
+```
+
+The server refuses to boot on a layout, width or view-count mismatch between
+config and checkpoint rather than serving quietly wrong weights.
+
+**3. Replay offline before going live.** Drives the server from a recorded
+episode and compares against the logged actions, so you can verify the whole
+path without the robot:
+
+```bash
+python web_infer_scripts/offline_client_relative.py \
+    --data-root data/datasets_lerobot/<domain> \
+    --episode 90 --host <SERVER_IP> --port 5008
+```
+
+**4. Run on the robot.**
+
+```bash
+python web_infer_scripts/robot_client_tactile_sharpa_dexmate.py \
+    --host <SERVER_IP> --port 5008 --max-steps 400
+```
+
+[`docs/rollout_runbook_right_only.md`](docs/rollout_runbook_right_only.md) is the
+step-by-step procedure including camera streamers and what to watch in the
+banner; [`docs/deploy_gates_right_only.md`](docs/deploy_gates_right_only.md)
+records the boot, dry-run, replay and byte-parity gates each policy passed.
+
+Hardware-specific pieces are named for our platform: `sharpa` is the fingertip
+tactile sensor, `dexmate` the 22-DoF bimanual robot. Porting to other hardware
+means replacing the client and the observation packing, not the server.
 
 ## Method
 
