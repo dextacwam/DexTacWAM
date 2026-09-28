@@ -16,7 +16,9 @@ software originally developed by Hugging Face, Lightricks, Genmo, NVIDIA,
 Stability AI and the Wan Team.
 
 Applicable copyright and license notices are retained in the corresponding
-source files.
+source files. Where an upstream notice had been dropped before the code
+reached us, it has been restored: models/action_patches/patches.py derives
+from the LTX-Video transformer in diffusers and now carries that attribution.
 
 Modifications
 -------------
