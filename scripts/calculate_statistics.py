@@ -173,7 +173,8 @@ def cal_statistic(data, _filter=True):
     Calculate statistics.
 
     - mean/std are used for zscore-style normalization.
-    - q01/q99 are used for min-max scaling in some dataloaders (e.g., libero_dataset.py).
+    - q01/q99 are used for min-max scaling in some dataloaders (e.g., the
+      upstream Genie-Envisioner ones).
     - min/max are also kept for backward compatibility / debugging.
     """
     q99 = np.percentile(data, 99, axis=0)

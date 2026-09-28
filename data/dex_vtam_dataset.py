@@ -31,9 +31,7 @@ import torch.nn.functional as F
 import cv2
 from PIL import Image
 
-# from data.utils.domain_table import DomainTable
 from data.utils.statistics import StatisticInfo
-# from data.utils.get_actions import parse_h5
 
 from utils import zero_rank_print
 from data.utils.utils import intrinsic_transform, gen_crop_config, intrin_crop_transform
@@ -509,7 +507,7 @@ class DexVTAMDataset(Dataset):
             self._kept_episode_indices = actually_kept
 
         # `repeat_dataset` virtually inflates the dataset length by N (mirrors
-        # WORLD-MODEL-TOUCH/data/libero_dataset.py). Useful for short corpora
+        # the upstream Genie-Envisioner libero dataset). Useful for short corpora
         # (e.g. 100-episode pick-cube): without this each "epoch" is only a
         # handful of batches, which thrashes the DataLoader workers and makes
         # the GE log/save cadence (steps_to_log / steps_to_save) misalign with
@@ -716,7 +714,7 @@ class DexVTAMDataset(Dataset):
 
         HARD-FAILS (KeyError) if the relative block is missing -- never silently
         falls back to the absolute stats (that would mis-normalize the relative
-        action). Regenerate with ``get_statistics.py --relative``.
+        action). Regenerate with ``scripts/get_statistics.py``.
 
         Also checks the block's WIDTH against ``arm_layout``: a bimanual (136-D)
         stats file paired with a right-only dataset would otherwise broadcast

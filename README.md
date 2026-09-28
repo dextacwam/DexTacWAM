@@ -90,11 +90,30 @@ They must match the checkpoint you serve — different statistics silently
 de-normalise actions wrong rather than failing:
 
 ```bash
-python scripts/calculate_statistics.py \
-    --data_root data/datasets_lerobot/<domain> \
-    --data_name <domain> \
-    --save_path configs/<task>/<domain>_relative_stats.json
+python scripts/get_statistics.py \
+    --relative \
+    --arm-layout   bimanual \
+    --data_root    data/datasets_lerobot/<domain>/data/chunk-000 \
+    --data_name    <domain> \
+    --data_type    eef \
+    --action_key   action \
+    --state_key    state \
+    --save_path    configs/<task>/<domain>_relative_stats.json \
+    --n-previous   4 \
+    --action-chunk 54
 ```
+
+`--data_type` must match the config's `action_space`, and `--arm-layout` must
+name the layout the corpus was recorded with (`bimanual` or `right_only`); the
+dataset hard-fails on a mismatch rather than silently mis-slicing. The file it
+writes holds four blocks — `<domain>_eef`, `_delta_eef`, `_state_eef` and
+`_relative_eef` — and the relative configs read the last two. `--n-previous` and
+`--action-chunk` must equal the config's `n_previous` and `action_chunk` (4 and
+54 for every released task).
+
+`scripts/calculate_statistics.py` computes the same quantities for absolute
+action spaces and has the outlier-filtering and gripper-clamping knobs; use it
+only if you are not training on relative actions.
 
 Then the offline cache. Training reads decoded frames from it rather than
 re-decoding parquet every `__getitem__`, and the same cache serves both stage 2
@@ -270,11 +289,11 @@ hand-level latents, retaining 89.4% of pre-fusion contact recall while enabling
 ## License
 
 This repository is not under a single licence. Original DexTacWAM code, and
-the Diffusers / LTX-Video / Cosmos / openpi code it builds on, are under the
+the Diffusers / LTX-Video / openpi code it builds on, are under the
 [Apache License 2.0](LICENSES/Apache-2.0.txt).
 
 Genie-Envisioner licenses everything outside `models/ltx_models`,
-`models/cosmos_models`, `models/pipeline` and `web_infer_utils/openpi_client`
+`models/pipeline` and `web_infer_utils/openpi_client`
 under [CC BY-NC-SA 4.0](LICENSES/CC-BY-NC-SA-4.0.txt). Those files, and the
 three DexTacWAM files substantially adapted from them, stay under that licence
 because of its ShareAlike term, and **may not be used commercially**.

@@ -12,13 +12,15 @@ Original DexTacWAM work: the tactile encoder, compressor and projector under
 models/tactile_models/, the stage 1 trainers, configs/, tests/ and the analysis
 scripts written for this project.
 
-Also the code taken from Diffusers, LTX-Video, Cosmos and openpi, which
+Also the code taken from Diffusers, LTX-Video and openpi, which
 Genie-Envisioner redistributes under Apache 2.0 and which lives under:
 
     models/ltx_models/
-    models/cosmos_models/
     models/pipeline/
     web_infer_utils/openpi_client/
+
+Genie-Envisioner names models/cosmos_models as a fourth such directory. We do
+not use the Cosmos backbone and have not shipped it.
 
 Original copyright notices are retained in those files, including work by
 Hugging Face, Lightricks, Genmo, NVIDIA, Stability AI and the Wan Team.
@@ -28,8 +30,8 @@ CC BY-NC-SA 4.0 -- NonCommercial
 --------------------------------
 
 Genie-Envisioner (https://github.com/AgibotTech/Genie-Envisioner-V1) at commit
-d54425c4d0ba9d56b33adc4bfe5e5187e5335603 licenses everything outside the four
-directories above under CC BY-NC-SA 4.0. Those files are redistributed here
+d54425c4d0ba9d56b33adc4bfe5e5187e5335603 licenses everything outside those
+directories under CC BY-NC-SA 4.0. Those files are redistributed here
 under the same terms, and so are the DexTacWAM files adapted from them, because
 ShareAlike carries forward:
 
@@ -37,10 +39,14 @@ ShareAlike carries forward:
     runner/tactile_inferencer.py    adapted from runner/ge_inferencer.py
     data/dex_vtam_dataset.py        adapted from data/libero_dataset.py
 
+The upstream files two of these came from (data/libero_dataset.py and the LIBERO
+and CALVIN helpers) are not shipped here, since nothing in this repository uses
+them. That does not change the licence of the adaptations.
+
 Using those files commercially is not permitted by this repository.
 
 One file sits awkwardly across the boundary. models/action_patches/patches.py
-falls outside the four Apache directories, so Genie-Envisioner's statement puts
+falls outside the Apache directories, so Genie-Envisioner's statement puts
 it under CC BY-NC-SA 4.0, but its ActionTransformerBlock is demonstrably derived
 from the LTX-Video transformer in Diffusers, which is Apache 2.0. The Diffusers
 notice is restored on the file and the more restrictive terms are marked on it
