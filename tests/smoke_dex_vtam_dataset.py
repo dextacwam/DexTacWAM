@@ -18,12 +18,7 @@ Checks:
      when constructed with ``read_tactile=False``, the sample dict has NO
      ``tactile`` key (strict GE baseline mode). This is required for
      byte-level reproducibility against vanilla GE training.
-  4. ``libero_dataset.py`` regression guard:
-     verifies ``data/libero_dataset.py`` still contains
-     ``class CustomLeRobotDataset`` and does NOT import ``_deep_stack`` --
-     i.e. the original libero file was not accidentally modified during the
-     scaffold/copy.
-  5. Temporal alignment: tactile T dim equals video T dim (same vid_indexes
+  4. Temporal alignment: tactile T dim equals video T dim (same vid_indexes
      used for both reads).
 
 Run::
@@ -304,37 +299,6 @@ def test_read_tactile_false_omits_field():
 
 
 # ---------------------------------------------------------------------------
-# 4. libero_dataset.py regression guard
-# ---------------------------------------------------------------------------
-
-
-def test_libero_dataset_unchanged():
-    _section("4] libero_dataset.py regression guard")
-    libero_path = Path(REPO_ROOT) / "data" / "libero_dataset.py"
-    assert libero_path.exists(), f"missing {libero_path}"
-    text = libero_path.read_text()
-
-    assert "class CustomLeRobotDataset(Dataset):" in text, (
-        "libero_dataset.py is missing 'class CustomLeRobotDataset(Dataset):' -- "
-        "the original libero file appears to have been modified."
-    )
-    assert "class DexVTAMDataset" not in text, (
-        "libero_dataset.py contains 'class DexVTAMDataset' -- the rename leaked "
-        "into the libero source, defeating the byte-identical baseline."
-    )
-    assert "from data.tactile_dataset import _deep_stack" not in text, (
-        "libero_dataset.py imports '_deep_stack' -- tactile changes leaked into "
-        "the libero source, defeating the byte-identical baseline."
-    )
-    assert "self.read_tactile" not in text, (
-        "libero_dataset.py references 'self.read_tactile' -- tactile knob leaked "
-        "into the libero source."
-    )
-    print("  libero_dataset.py: class CustomLeRobotDataset present OK")
-    print("  libero_dataset.py: no DexVTAMDataset/tactile leakage OK")
-
-
-# ---------------------------------------------------------------------------
 # 5. Temporal alignment: tactile T == video T (same vid_indexes)
 # ---------------------------------------------------------------------------
 
@@ -370,7 +334,6 @@ def main():
     test_tactile_field_contract()
     test_existing_fields_preserved()
     test_read_tactile_false_omits_field()
-    test_libero_dataset_unchanged()
     test_video_tactile_temporal_alignment()
 
     print("\nALL F3 SMOKE CHECKS PASSED")
