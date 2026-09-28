@@ -133,14 +133,26 @@ The three stages run in order; each one's output is the next one's warm start.
 After finishing a stage, point the next config at the run directory you just
 produced — the paths committed here are from our runs and will not exist for you.
 
-**Stage 1 — tactile encoder adaptation.** Single GPU. The pose and flow
-statistics both stage 1 configs need are committed under `data/stats/`; only
-the corpora themselves are still to come.
+**Stage 1 — tactile encoder adaptation.** Single GPU, on the
+`488_diverse_episodes` corpus whose statistics are committed under
+`data/stats/diverse_488/`.
+
+What the paper calls the tactile encoder is a finger-set-transformer adapter
+bolted onto a frozen LTX-Video VAE trunk, so in the code it is the visual VAE
+adapter. Training it takes two runs. The first trains the adapter from scratch
+for 30k steps with an auxiliary pose head. The second continues for 60k,
+warm-started from the first at `step_00030000`, adding pose injection and a
+TimeSformer temporal head zero-initialised so step 0 is bit-equal to where the
+base run left off, and drops the pose loss.
 
 ```bash
-python -m runner.tactile_vae_trainer --config configs/stage1_tactile_encoder.yaml
+python -m runner.visual_vae_adapter_trainer --config configs/stage1_visual_vae_adapter_base.yaml
 python -m runner.visual_vae_adapter_trainer --config configs/stage1_visual_vae_adapter.yaml
 ```
+
+Point `tactile_vae.model_path` in the second config at the run directory the
+first produced. Its `best_recall_post` checkpoint is what every stage 2 and
+stage 3 config loads.
 
 **Stage 2 — continual vision-to-touch learning.** Set `tactile_vae.model_path`
 to the stage 1 checkpoint first. 80k steps, measured at 2.47 s/it on 4x H200 NVL
