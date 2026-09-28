@@ -1,3 +1,10 @@
+# This file is an adaptation of Genie-Envisioner (AgibotTech) code that upstream
+# licenses under CC BY-NC-SA 4.0, so the ShareAlike term applies and this file is
+# distributed under the same licence rather than the repository's Apache 2.0:
+# see LICENSES/CC-BY-NC-SA-4.0.txt. NonCommercial use only.
+#
+# Modified by the DexTacWAM Authors, 2026.
+
 """Stage 2 / Stage 3 tactile-into-DiT trainer (fork of ``runner/ge_trainer.py``).
 
 Spec: ``stage_2_design_doc_bc5b3fc0.plan.md`` (LOCKED v2.2 with corrected

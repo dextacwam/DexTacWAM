@@ -1,3 +1,10 @@
+# This file is an adaptation of Genie-Envisioner (AgibotTech) code that upstream
+# licenses under CC BY-NC-SA 4.0, so the ShareAlike term applies and this file is
+# distributed under the same licence rather than the repository's Apache 2.0:
+# see LICENSES/CC-BY-NC-SA-4.0.txt. NonCommercial use only.
+#
+# Modified by the DexTacWAM Authors, 2026.
+
 
 import sys
 import os
