@@ -51,7 +51,7 @@
 #   * action_only_dim_override 75 -> 68.
 # The cache stores RAW action/state (pre-normalization), so relativization
 # happens after cache read.
-# See DexVTAM/docs/relative_eef_rot6d_design.md and data/utils/relative_action.py.
+# See data/utils/relative_action.py for the construction.
 # =============================================================================
 # Stage 3 (B3) -- action_full + TACTILE ON + pick-place-cube-right-only-WM warmstart
 #                 (bypass) + SHARED + KV RMSNorm  LONG50000  

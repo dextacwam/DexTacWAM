@@ -17,8 +17,8 @@ and `TactilePoseDecoder`:
     token to mark the modality, so a downstream DiT can distinguish tactile
     tokens from visual ones in Stage 3.
 
-See ``docs/tactile_vae_stage1.md`` §1 (Encoder) and §2a (Flow decoder) for
-the surrounding architecture and the C1–C4 latent alignment contracts.
+See :mod:`models.tactile_models.tactile_vae` for the surrounding
+architecture and the C1–C4 latent alignment contracts.
 """
 
 from __future__ import annotations
