@@ -134,9 +134,8 @@ After finishing a stage, point the next config at the run directory you just
 produced — the paths committed here are from our runs and will not exist for you.
 
 **Stage 1 — tactile encoder adaptation.** Single GPU. The pose and flow
-statistics for the tactile interaction corpus
-(`data/stats/wipe_plate_plus_wrap/`) ship with that dataset in October; the
-`diverse_488` statistics every later stage needs are already in the repo.
+statistics both stage 1 configs need are committed under `data/stats/`; only
+the corpora themselves are still to come.
 
 ```bash
 python -m runner.tactile_vae_trainer --config configs/stage1_tactile_encoder.yaml
