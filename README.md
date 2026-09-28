@@ -161,6 +161,26 @@ The three stages run in order; each one's output is the next one's warm start.
 After finishing a stage, point the next config at the run directory you just
 produced — the paths committed here are from our runs and will not exist for you.
 
+### Bringing DexTacWAM to your own task
+
+**Skip stage 1.** It adapts the tactile encoder to the Sharpa Wave hands in
+general, not to any task, so there is nothing task-specific to rerun. Download
+the [released encoder](https://huggingface.co/JensenYuan/DexTacWAM_multi_finger_tactile_encoder),
+point `tactile_vae.model_path` at it, and start at stage 2. That saves the two
+runs below and the 282 GB corpus they need.
+
+From there, **30k steps of stage 2 and 10k of stage 3** is enough to get a
+working policy on a new task with roughly 100 demonstrations. The committed
+configs run far longer (`train_steps: 1000000` and `50000`) because we let them
+run and selected checkpoints afterwards; they are ceilings, not targets. Stop
+early and evaluate.
+
+The rest of this section is the full recipe, which is what you want if you are
+reproducing the paper rather than building on it. Note that even then stage 1 is
+optional: the released encoder is the one the paper's results were produced
+with, so you only need to rerun it if the encoder itself is what you are
+studying.
+
 **Stage 1 — tactile encoder adaptation.** Single GPU, on the
 `488_diverse_episodes` corpus whose statistics are committed under
 `data/stats/diverse_488/`.
