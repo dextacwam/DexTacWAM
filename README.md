@@ -72,15 +72,43 @@ pretrained_models/genie_envisioner/GE_base_fast_v0.1.safetensors
 
 ## Checkpoints and data
 
-| Component | Status |
-| --- | --- |
-| Tactile encoder and per-task policy checkpoints | October 2026 |
-| Tactile interaction dataset (4 h, encoder adaptation) | October 2026 |
-| Task demonstrations (~100 per task, six tasks) | October 2026 |
+Everything lives under the [DexTacWAM collection on HuggingFace](https://huggingface.co/JensenYuan),
+Apache 2.0 like this repository.
 
-Until these land you can still run the full pipeline on your own LeRobot-format
-corpus. Datasets go in `data/datasets_lerobot/<domain>/`, caches in
-`data/cache/<name>/`, run outputs in `outputs/`.
+The stage 1 tactile encoder is released as weights, because it is expensive to
+reproduce and every downstream stage depends on it:
+
+| | |
+| --- | --- |
+| [`DexTacWAM_multi_finger_tactile_encoder`](https://huggingface.co/JensenYuan/DexTacWAM_multi_finger_tactile_encoder) | 866 MB, step 53000 |
+
+The corpus it was trained on, and the six evaluation tasks:
+
+| Dataset | Episodes | Size | Config |
+| --- | --- | --- | --- |
+| [`DexTacWAM_488_diverse_episodes`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_488_diverse_episodes) | 488 (250 instructions, 3.5 h) | 282 GB | stage 1 |
+| [`20260724_unscrew_bottle_cap_v2`](https://huggingface.co/datasets/JensenYuan/20260724_unscrew_bottle_cap_v2) | 96 | 49 GB | `configs/bottle_cap/` |
+| [`20260725_pinch_from_bowl_with_fingers_right_only`](https://huggingface.co/datasets/JensenYuan/20260725_pinch_from_bowl_with_fingers_right_only) | 100 | 17 GB | `configs/bowl_unstack/` |
+| [`20260801_placed_tong_right_only_lerobot`](https://huggingface.co/datasets/JensenYuan/20260801_placed_tong_right_only_lerobot) | 100 | 26 GB | `configs/tongs/` |
+| [`20260806_cube_handover_lerobot`](https://huggingface.co/datasets/JensenYuan/20260806_cube_handover_lerobot) | 100 | 29 GB | `configs/cube_handover/` |
+| [`20260808_wipe_white_board_lerobot`](https://huggingface.co/datasets/JensenYuan/20260808_wipe_white_board_lerobot) | 99 | 57 GB | `configs/wipe_whiteboard/` |
+| [`DexTacWAM_pick_place_cube_lerobot`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_pick_place_cube_lerobot) | 100 | 13 GB | `configs/cube_place/` |
+
+The 488-episode corpus is a breadth corpus, not a demonstration set: 250
+distinct instructions over 488 episodes, so most tasks appear once or twice.
+Its job is to show the tactile encoder what contact looks like in general. Do
+not try to train a policy on it.
+
+**We do not distribute stage 2 world models or stage 3 action experts.** Those
+are yours to train — stage 2 warm-starts from Genie-Envisioner's public
+`GE_base_fast_v0.1.safetensors`, and the action expert is randomly initialised
+anyway, so nothing about our copies is load-bearing. The configs under
+`configs/<task>/` are the ones we used, checkpoint selection included.
+
+Datasets go in `data/datasets_lerobot/<domain>/`, caches in `data/cache/<name>/`,
+run outputs in `outputs/`. You can equally run the whole pipeline on your own
+LeRobot-format corpus; see [Data preparation](#data-preparation) for the
+statistics you need to regenerate.
 
 ## Data preparation
 
