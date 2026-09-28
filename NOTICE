@@ -1,20 +1,32 @@
-DexTacWAM builds on Genie-Envisioner-V1:
+DexTacWAM
+Copyright 2026 The DexTacWAM Authors
 
-    https://github.com/AgibotTech/Genie-Envisioner-V1
-    pinned commit d54425c4d0ba9d56b33adc4bfe5e5187e5335603
+This product includes software developed by AgibotTech as part of
+Genie-Envisioner (https://github.com/AgibotTech/Genie-Envisioner-V1), taken at
+commit d54425c4d0ba9d56b33adc4bfe5e5187e5335603. DexTacWAM builds directly on
+that codebase, as does FAWAM (https://github.com/HaotianHehaha/FAWAM), which
+released the same lineage under the MIT License.
 
-That project does not carry a licence, so none of its code is redistributed
-here. This repository contains only work authored by the DexTacWAM authors:
+The following files carry upstream code that the DexTacWAM authors modified:
 
-  * src/        new modules that sit alongside the upstream tree
-  * configs/    training and evaluation configurations
-  * tests/      unit and smoke tests
-  * patches/    a diff against the pinned upstream commit
+    main.py
+    models/action_patches/patches.py
+    models/ltx_models/transformer_ltx_multiview.py
+    models/pipeline/custom_pipeline.py
+    runner/ge_trainer.py
+    scripts/get_statistics.py
+    utils/__init__.py
+    utils/model_utils.py
 
-`setup_upstream.sh` clones Genie-Envisioner-V1 yourself, applies the patch and
-overlays src/. Whether you may use the result is governed by whatever terms
-AgibotTech grants for their code; the MIT licence in this repository covers the
-DexTacWAM contribution only.
+Everything under the following paths is original work by the DexTacWAM authors:
+
+    models/tactile_models/
+    runner/tactile_*.py, runner/visual_vae_adapter_trainer.py
+    data/dex_vtam_dataset.py, data/tactile_dataset.py, data/utils/
+    configs/ (except configs/ltx_model/ and configs/cosmos_model/)
+    scripts/ (the DexTacWAM analysis and preprocessing scripts)
+    tests/
 
 The pretrained LTX-Video and Genie-Envisioner weights that the configs expect
-are distributed by their respective authors under their own terms.
+are distributed by their respective authors under their own terms and are not
+included here.

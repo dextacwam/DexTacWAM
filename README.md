@@ -18,7 +18,7 @@
 
 [![Paper](https://img.shields.io/badge/arXiv-2609.24976-b31b1b.svg)](https://arxiv.org/abs/2609.24976)
 [![Project Page](https://img.shields.io/badge/Project-Page-1f6feb.svg)](https://dextacwam.github.io/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
 
 </div>
 
@@ -41,29 +41,27 @@ contact-rich tasks on a 22-DoF bimanual platform it averages **70.6** against
 ## Repository layout
 
 ```
-src/        modules authored by us, laid over the upstream tree
-configs/    the 16 configs behind the paper results
-tests/      unit and smoke tests
-patches/    diff against Genie-Envisioner-V1 @ d54425c4
-setup_upstream.sh
+models/tactile_models/   tactile encoder, compressor and projector
+runner/                  three-stage trainers and the inferencer
+data/                    datasets, caching and the layout contract
+configs/                 the 16 configs behind the paper results
+tests/                   unit and smoke tests
 ```
 
-This repository does **not** redistribute Genie-Envisioner-V1, which carries no
-licence. `setup_upstream.sh` fetches it for you and reconstructs the full tree.
-See [NOTICE](NOTICE).
+DexTacWAM builds on [Genie-Envisioner](https://github.com/AgibotTech/Genie-Envisioner-V1)
+at commit `d54425c4`; that code is included here and the files we modified are
+listed in [NOTICE](NOTICE).
 
 ## Installation
 
 ```bash
 git clone https://github.com/dextacwam/DexTacWAM.git
 cd DexTacWAM
-bash setup_upstream.sh          # clones upstream @ d54425c4, applies patch, overlays src/
-cd build
 pip install -r requirements.txt
 ```
 
-Everything below is run from `build/`, which is the assembled tree. Training was
-developed on 4x H200 NVL; stage 2 and 3 need multi-GPU, stage 1 fits on one.
+Training was developed on 4x H200 NVL; stage 2 and 3 need multi-GPU, stage 1
+fits on one.
 
 Place the pretrained backbones where the configs expect them:
 
@@ -231,8 +229,9 @@ hand-level latents, retaining 89.4% of pre-fusion contact recall while enabling
 
 ## License
 
-[MIT](LICENSE) for the code we authored. Third-party components keep their own
-licences; see [NOTICE](NOTICE).
+[Apache License 2.0](LICENSE). This repository includes code from
+Genie-Envisioner; the files we modified and the parts that are original to
+DexTacWAM are itemised in [NOTICE](NOTICE).
 
 ## Contact
 
