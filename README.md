@@ -2,10 +2,10 @@
 
 # [DexTacWAM: A Visuo-Tactile World-Action Model for Dexterous Manipulation](https://dextacwam.github.io/)
 
-[Haoran Yuan](https://scholar.google.com/citations?user=PzdigUMAAAAJ)<sup>1,‡</sup> &nbsp;
+[Haoran Yuan](https://scholar.google.com/citations?user=PzdigUMAAAAJ)<sup>1,&ast;,‡</sup> &nbsp;
 [Zekai Wang](https://scholar.google.com/citations?user=Dngm3CYAAAAJ)<sup>2</sup> &nbsp;
 [Boning Shao](https://scholar.google.com/citations?user=tlOWnSIAAAAJ)<sup>2</sup> &nbsp;
-[Haoran Lu](https://luhr2003.github.io/)<sup>3</sup> &nbsp;
+[Haoran Lu](https://luhr2003.github.io/)<sup>3,&ast;</sup> &nbsp;
 [Trevor Darrell](https://people.eecs.berkeley.edu/~trevor/)<sup>2</sup> &nbsp;
 [Ismini Lourentzou](https://isminoula.github.io/)<sup>1,†</sup> &nbsp;
 [Wei Zhan](https://scholar.google.com/citations?user=xVN3UxYAAAAJ)<sup>2,†</sup>
@@ -13,6 +13,8 @@
 <sup>1</sup>University of Illinois Urbana-Champaign &nbsp;
 <sup>2</sup>University of California, Berkeley &nbsp;
 <sup>3</sup>Northwestern University
+
+<sup>&ast;</sup>Work done during a visit to UC Berkeley
 
 <sup>‡</sup>Project lead &nbsp;&nbsp; <sup>†</sup>Equal advising, co-corresponding authors
 
