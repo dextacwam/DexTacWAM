@@ -130,15 +130,20 @@ reproduce and every downstream stage depends on it:
 
 The corpus it was trained on, and the six evaluation tasks:
 
-| Dataset | Episodes | Size | Config |
-| --- | --- | --- | --- |
-| [`DexTacWAM_488_diverse_episodes`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_488_diverse_episodes) | 488 (250 instructions, 3.5 h) | 282 GB | stage 1 |
-| [`20260724_unscrew_bottle_cap_v2`](https://huggingface.co/datasets/JensenYuan/20260724_unscrew_bottle_cap_v2) | 96 | 49 GB | `configs/bottle_cap/` |
-| [`20260725_pinch_from_bowl_with_fingers_right_only`](https://huggingface.co/datasets/JensenYuan/20260725_pinch_from_bowl_with_fingers_right_only) | 100 | 17 GB | `configs/bowl_unstack/` |
-| [`20260801_placed_tong_right_only_lerobot`](https://huggingface.co/datasets/JensenYuan/20260801_placed_tong_right_only_lerobot) | 100 | 26 GB | `configs/tongs/` |
-| [`20260806_cube_handover_lerobot`](https://huggingface.co/datasets/JensenYuan/20260806_cube_handover_lerobot) | 100 | 29 GB | `configs/cube_handover/` |
-| [`20260808_wipe_white_board_lerobot`](https://huggingface.co/datasets/JensenYuan/20260808_wipe_white_board_lerobot) | 99 | 57 GB | `configs/wipe_whiteboard/` |
-| [`DexTacWAM_pick_place_cube_lerobot`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_pick_place_cube_lerobot) | 100 | 13 GB | `configs/cube_place/` |
+| Dataset | Episodes | Size | Config | Unpack as |
+| --- | --- | --- | --- | --- |
+| [`DexTacWAM_488_diverse_episodes`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_488_diverse_episodes) | 488 (250 instructions, 3.5 h) | 282 GB | stage 1 | `data/datasets/488_diverse_episodes` |
+| [`DexTacWAM_unscrew_bottle_cap`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_unscrew_bottle_cap) | 96 | 49 GB | `configs/bottle_cap/` | `data/datasets_lerobot/20260724_unscrew_bottle_cap_v2` |
+| [`DexTacWAM_unstack_bowl`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_unstack_bowl) | 100 | 17 GB | `configs/bowl_unstack/` | `data/datasets_lerobot/20260725_pinch_from_bowl_with_fingers_right_only` |
+| [`DexTacWAM_place_with_tongs`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_place_with_tongs) | 100 | 26 GB | `configs/tongs/` | `data/datasets_lerobot/20260801_placed_tong_right_only` |
+| [`DexTacWAM_cube_handover`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_cube_handover) | 100 | 29 GB | `configs/cube_handover/` | `data/datasets_lerobot/20260806_cube_handover` |
+| [`DexTacWAM_wipe_whiteboard`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_wipe_whiteboard) | 99 | 57 GB | `configs/wipe_whiteboard/` | `data/datasets_lerobot/20260808_wipe_white_board` |
+| [`DexTacWAM_pick_place_cube`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_pick_place_cube) | 100 | 13 GB | `configs/cube_place/` | `data/datasets_lerobot/20260809_pick_place_cube` |
+
+The last column matters: the configs address a corpus by its directory name, and
+the normalization statistics committed next to each config are keyed on that
+same name. Download into the path shown or edit `data_roots`, `domains`,
+`val_splits` and `stat_file` together.
 
 The 488-episode corpus covers 250 distinct instructions, so most tasks appear
 only once or twice. It is meant for tactile representation learning in stage 1;
