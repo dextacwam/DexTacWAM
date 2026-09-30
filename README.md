@@ -41,9 +41,9 @@ diffusion world model for joint visuo-tactile world modeling. Across six
 contact-rich tasks on a 22-DoF bimanual platform it averages **70.6** against
 **38.0** for the strongest baseline.
 
-The compressor is what makes that affordable: it reduces ten fingertip streams
-to two hand-level latents, retaining 89.4% of pre-fusion contact recall while
-training 2.26x faster and running inference 1.29x faster.
+The tactile compressor reduces ten fingertip streams to two hand-level latents.
+This retains 89.4% of pre-fusion contact recall while training 2.26x faster and
+running inference 1.29x faster.
 
 ## Release
 
@@ -54,8 +54,8 @@ training 2.26x faster and running inference 1.29x faster.
 - The pretrained stage 1 multi-finger tactile encoder
 - Real-robot deployment and evaluation code
 
-Not included: stage 2 world models and stage 3 action experts. Those are cheap
-to train from what is here and carry no information the configs do not — see
+Not included: stage 2 world models and stage 3 action experts. Both can be
+trained from what is released here; see
 [Checkpoints and data](#checkpoints-and-data).
 
 ## Repository layout
@@ -102,8 +102,8 @@ hf download Lightricks/LTX-Video --local-dir pretrained_models/ltx_video \
     --include "model_index.json" "vae/*" "tokenizer/*" "text_encoder/*"
 ```
 
-The `--include` filter is deliberate: post-training needs only those four
-pieces, not the full LTX-Video checkpoint. The result should look like this:
+Post-training uses only those four pieces of LTX-Video, which is why the
+download is filtered. The result should look like this:
 
 ```
 pretrained_models/ltx_video/{model_index.json,vae/,tokenizer/,text_encoder/}
@@ -140,16 +140,15 @@ The corpus it was trained on, and the six evaluation tasks:
 | [`20260808_wipe_white_board_lerobot`](https://huggingface.co/datasets/JensenYuan/20260808_wipe_white_board_lerobot) | 99 | 57 GB | `configs/wipe_whiteboard/` |
 | [`DexTacWAM_pick_place_cube_lerobot`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_pick_place_cube_lerobot) | 100 | 13 GB | `configs/cube_place/` |
 
-The 488-episode corpus is a breadth corpus, not a demonstration set: 250
-distinct instructions over 488 episodes, so most tasks appear once or twice.
-Its job is to show the tactile encoder what contact looks like in general. Do
-not try to train a policy on it.
+The 488-episode corpus covers 250 distinct instructions, so most tasks appear
+only once or twice. It is meant for tactile representation learning in stage 1;
+there are too few episodes per task to train a policy from it.
 
-**We do not distribute stage 2 world models or stage 3 action experts.** Those
-are yours to train — stage 2 warm-starts from Genie-Envisioner's public
-`GE_base_fast_v0.1.safetensors`, and the action expert is randomly initialized
-anyway, so nothing about our copies is load-bearing. The configs under
-`configs/<task>/` are the ones we used, checkpoint selection included.
+**We do not distribute stage 2 world models or stage 3 action experts.** Stage 2
+warm-starts from Genie-Envisioner's public `GE_base_fast_v0.1.safetensors` and
+the action expert is randomly initialized, so both can be reproduced from what
+is released here. The configs under `configs/<task>/` are the ones we used,
+including checkpoint selection.
 
 Datasets go in `data/datasets_lerobot/<domain>/`, caches in `data/cache/<name>/`,
 run outputs in `outputs/`. You can equally run the whole pipeline on your own
@@ -160,8 +159,8 @@ statistics you need to regenerate.
 
 The normalization statistics for the six evaluation tasks are committed next to
 their configs, so you only need to regenerate them if you bring your own corpus.
-They must match the checkpoint you serve — different statistics silently
-de-normalize actions wrong rather than failing:
+They must match the checkpoint you serve; mismatched statistics de-normalize
+actions incorrectly without raising an error.
 
 ```bash
 python scripts/get_statistics.py \
@@ -179,9 +178,9 @@ python scripts/get_statistics.py \
 
 `--data_type` must match the config's `action_space`, and `--arm-layout` must
 name the layout the corpus was recorded with (`bimanual` or `right_only`); the
-dataset hard-fails on a mismatch rather than silently mis-slicing. The file it
-writes holds four blocks — `<domain>_eef`, `_delta_eef`, `_state_eef` and
-`_relative_eef` — and the relative configs read the last two. `--n-previous` and
+dataset raises an error if the two disagree. The file it writes holds four
+blocks (`<domain>_eef`, `_delta_eef`, `_state_eef` and `_relative_eef`), of
+which the relative configs read the last two. `--n-previous` and
 `--action-chunk` must equal the config's `n_previous` and `action_chunk` (4 and
 54 for every released task).
 
@@ -205,7 +204,7 @@ python scripts/preprocess_dex_vtam_cache.py \
 
 The three stages run in order; each one's output is the next one's warm start.
 After finishing a stage, point the next config at the run directory you just
-produced — the paths committed here are from our runs and will not exist for you.
+produced. The paths committed here are from our runs and will not exist for you.
 
 ### Recommended workflow for a new task
 
@@ -218,18 +217,16 @@ the two stage 1 runs below and the 282 GB corpus they need.
 In our experiments, roughly **30k stage 2 steps and 10k stage 3 steps** were
 typically sufficient to obtain a working policy from about 100 demonstrations
 per task. The committed configs run far longer (`train_steps: 1000000` and
-`50000`) because we let them run and selected checkpoints afterwards; treat
-those as ceilings, not targets. Stop early and evaluate.
+`50000`) because we let them run and selected checkpoints afterwards, so treat
+those values as upper bounds. Stop early and evaluate.
 
-The rest of this section is the full recipe, which is what you want if you are
-reproducing the paper rather than building on it. Even then stage 1 is optional:
-the released encoder is the one the paper's results were produced with, so rerun
-it only if the encoder itself is what you are studying.
+The rest of this section is the full recipe, for reproducing the paper. Stage 1
+is optional there too: the released encoder is the one our results were produced
+with, so rerun it only if the encoder itself is what you are studying.
 
-> **Naming note.** The paper calls stage 1 *tactile encoder adaptation*. For
-> historical reasons the implementation is named `visual_vae_adapter` in this
-> codebase — the encoder is an adapter bolted onto a frozen LTX-Video VAE trunk,
-> and the name stuck.
+> **Naming note.** The paper calls stage 1 *tactile encoder adaptation*. In the
+> code the same thing is named `visual_vae_adapter`, because the encoder is
+> implemented as an adapter on a frozen LTX-Video VAE trunk.
 
 **Stage 1 — tactile encoder adaptation.** Single GPU, on the
 `488_diverse_episodes` corpus whose statistics are committed under
@@ -317,8 +314,8 @@ Deployment is a server/client split. The policy server holds the world model and
 action expert on the GPU workstation; a thin client on the robot streams
 observations and receives action chunks over HTTP.
 
-**1. Dry-run the layout contract.** Numpy-only, no GPU, no torch — it runs on a
-login node and catches action/state mis-slicing before any hardware moves:
+**1. Dry-run the layout contract.** Numpy only, no GPU and no torch, so it runs
+on a login node. It catches action/state mis-slicing before any hardware moves:
 
 ```bash
 python web_infer_scripts/dryrun_relative_server.py \
@@ -335,8 +332,8 @@ checkpoint to serve. Omit `STEP` to list what is available and exit:
 TASK=bowl STEP=10000 bash web_infer_scripts/run_server_tactile_relative.sh
 ```
 
-The server refuses to boot on a layout, width or view-count mismatch between
-config and checkpoint rather than serving quietly wrong weights.
+If the layout, width or view count disagree between config and checkpoint, the
+server refuses to boot.
 
 **3. Replay offline before going live.** Drives the server from a recorded
 episode and compares against the logged actions, so you can verify the whole
