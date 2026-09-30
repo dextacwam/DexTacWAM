@@ -47,16 +47,20 @@ running inference 1.29x faster.
 
 ## Release
 
-- Full training and inference code for all three stages
+- Full training and offline inference code for all three stages
 - Configs for the six real-robot tasks and the ablations
 - The 488-episode tactile pretraining corpus
 - Roughly 100 demonstrations for each of the six evaluation tasks
 - The pretrained stage 1 multi-finger tactile encoder
 - Real-robot deployment and evaluation code
 
-Not included: stage 2 world models and stage 3 action experts. Neither is a
-pretrained component even in our own runs, and both are specific to our robot
-and our six tasks. See [Checkpoints and data](#checkpoints-and-data).
+**Not included:** stage 2 world models and stage 3 action experts. Both are
+specific to our robot, tasks, and deployment scenes. Our reported results do not
+rely on additional tactile midtraining or action pretraining: the stage 2 world
+model is continually finetuned from the released pretrained video model, and the
+stage 3 action expert is randomly initialized and trained from scratch.
+New deployment environments require task-specific data collection and training.
+See [Checkpoints and data](#checkpoints-and-data).
 
 ## Repository layout
 
@@ -80,9 +84,9 @@ cd DexTacWAM
 pip install -r requirements.txt
 ```
 
-The released configs were developed and tested on 4x H200 NVL. Stage 1 fits on
-a single GPU; stages 2 and 3 were run with distributed multi-GPU training, and
-the batch sizes in the configs assume it.
+Our reference setup used 4x H200 NVL GPUs. Stage 1 fits on a single GPU; stages
+2 and 3 were trained with distributed multi-GPU training, and the released batch
+sizes reflect that setup.
 
 Then fetch the three sets of weights the configs expect. Ours first:
 
@@ -150,13 +154,14 @@ The 488-episode corpus covers 250 distinct instructions, so most tasks appear
 only once or twice. It is meant for tactile representation learning in stage 1;
 there are too few episodes per task to train a policy from it.
 
-**We do not release stage 2 world models or stage 3 action experts.** Neither is
-a pretrained component even in our own runs. Stage 2 warm-starts from
-Genie-Envisioner's public `GE_base_fast_v0.1.safetensors`, and the action expert
-is randomly initialized. Both are also specific to our robot and our six tasks,
-so a new task needs them retrained regardless. What transfers is the tactile
-encoder and the recipe: the configs under `configs/<task>/` are the ones we
-used, including checkpoint selection.
+**We do not release stage 2 world models or stage 3 action experts.** Stage 2
+warm-starts from `GE_base_fast_v0.1.safetensors`, the pretrained video model
+downloaded in the [Installation](#installation) section, and the action expert
+is randomly initialized. Both checkpoints are specific to our robot, our six
+tasks, and our deployment scenes, so deployment in a new setup generally
+requires task-specific data collection and retraining or adaptation. What
+transfers is the tactile encoder and the recipe: the configs under
+`configs/<task>/` are the ones we used, including checkpoint selection.
 
 Datasets go in `data/datasets_lerobot/<domain>/`, caches in `data/cache/<name>/`,
 run outputs in `outputs/`. The full pipeline also runs on your own
@@ -210,29 +215,32 @@ python scripts/preprocess_dex_vtam_cache.py \
 
 ## Training
 
-The three stages run in order; each one's output is the next one's warm start.
-After finishing a stage, point the next config at the run directory you just
-produced. The paths committed in the configs refer to our own runs and need to
-be updated accordingly.
+The three stages run in order. Stage 1 initializes the tactile encoder used by
+stage 2, and the stage 2 world-model checkpoint initializes the world-model body
+used in stage 3. After finishing a stage, point the next config at the run
+directory you just produced. The paths committed in the configs refer to our own
+runs and need to be updated accordingly.
 
 ### Recommended workflow for a new task
 
 **Start from stage 2.** Stage 1 performs task-agnostic tactile encoder
 adaptation for the Sharpa Wave hands and does not need to be repeated per
-downstream task. Point `tactile_vae.model_path` at the encoder you downloaded
-during installation and train stage 2 on your own demonstrations. That skips
-the two stage 1 runs below and the 282 GB corpus they need.
+downstream task. Point `tactile_vae.model_path` at the encoder you downloaded in
+the [Installation](#installation) section and train stage 2 on your own
+demonstrations. That skips the two stage 1 runs below and the 282 GB corpus they
+need.
 
 In our experiments, roughly **30k stage 2 steps and 10k stage 3 steps** were
 typically sufficient to obtain a working policy from about 100 demonstrations
-per task. The committed configs run far longer (`train_steps: 1000000` and
-`50000`) because we let them run and selected checkpoints afterwards. Treat
-these training steps as upper bounds rather than targets; evaluate intermediate
-checkpoints and stop once performance has converged.
+per task. The larger `train_steps` values in the released configs
+(`train_steps: 1000000` and `50000`) are upper bounds rather than recommended
+targets. Evaluate intermediate checkpoints and stop once performance has
+converged.
 
-The rest of this section is the full recipe, for reproducing the paper. Stage 1
-is optional there too: the released encoder is the one our results were produced
-with, so rerun it only if the encoder itself is what you are studying.
+The rest of this section documents the full training recipe used in our
+experiments. Stage 1 is optional there too: the released encoder is the one our
+results were produced with, so rerun it only if the encoder itself is what you
+are studying.
 
 > **Naming note.** The paper calls stage 1 *tactile encoder adaptation*. In the
 > code the same thing is named `visual_vae_adapter`, because the encoder is
@@ -259,8 +267,8 @@ first produced. Its `best_recall_post` checkpoint is what every stage 2 and
 stage 3 config loads.
 
 **Stage 2 — continual vision-to-touch learning.** Set `tactile_vae.model_path`
-to the stage 1 checkpoint first. 80k steps, measured at 2.47 s/it on 4x H200 NVL
-(~55 h); step 30000 is the stage 3 warm start.
+to the stage 1 checkpoint first. Measured at 2.47 s/it on 4x H200 NVL; step
+30000 is what we used to initialize stage 3.
 
 ```bash
 torchrun --nnodes=1 --nproc_per_node=4 \
@@ -371,14 +379,16 @@ records the boot, dry-run, replay and byte-parity gates each policy passed.
 
 Hardware-specific pieces are named for our platform: `sharpa` is the fingertip
 tactile sensor, `dexmate` the 22-DoF bimanual robot. Porting to other hardware
-means replacing the client and the observation packing, not the server.
+means replacing the client and the observation packing; the policy server is
+largely hardware-agnostic.
 
 ## Method
 
 ![Architecture](assets/architecture.png)
 
 1. **Tactile-encoder adaptation.** A per-finger tactile encoder is adapted on
-   four hours of tactile interaction data behind a frozen pretrained vision VAE.
+   four hours of tactile interaction data with the pretrained vision VAE
+   backbone frozen.
 2. **Continual vision-to-touch learning.** The pretrained video world model is
    extended to joint visuo-tactile prediction using roughly 100 demonstrations
    per task, without tactile midtraining of the video backbone, and retains
@@ -419,7 +429,8 @@ Every file states which license applies in its own header, and [NOTICE](NOTICE)
 maps it out.
 
 The released checkpoint and datasets on HuggingFace are Apache 2.0. The
-upstream weights you download during installation are not ours to license:
+upstream weights downloaded in the [Installation](#installation) section are not
+ours to license:
 `GE_base_fast_v0.1.safetensors` and the LTX-Video components come under the
 LTX-Video Open Weights License.
 
