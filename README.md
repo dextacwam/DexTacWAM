@@ -54,9 +54,9 @@ running inference 1.29x faster.
 - The pretrained stage 1 multi-finger tactile encoder
 - Real-robot deployment and evaluation code
 
-Not included: stage 2 world models and stage 3 action experts. Both can be
-trained from what is released here; see
-[Checkpoints and data](#checkpoints-and-data).
+Not included: stage 2 world models and stage 3 action experts. Neither is a
+pretrained component even in our own runs, and both are specific to our robot
+and our six tasks. See [Checkpoints and data](#checkpoints-and-data).
 
 ## Repository layout
 
@@ -149,11 +149,13 @@ The 488-episode corpus covers 250 distinct instructions, so most tasks appear
 only once or twice. It is meant for tactile representation learning in stage 1;
 there are too few episodes per task to train a policy from it.
 
-**We do not distribute stage 2 world models or stage 3 action experts.** Stage 2
-warm-starts from Genie-Envisioner's public `GE_base_fast_v0.1.safetensors` and
-the action expert is randomly initialized, so both can be reproduced from what
-is released here. The configs under `configs/<task>/` are the ones we used,
-including checkpoint selection.
+**We do not release stage 2 world models or stage 3 action experts.** Neither is
+a pretrained component even in our own runs. Stage 2 warm-starts from
+Genie-Envisioner's public `GE_base_fast_v0.1.safetensors`, and the action expert
+is randomly initialized. Both are also specific to our robot and our six tasks,
+so a new task needs them retrained regardless. What transfers is the tactile
+encoder and the recipe: the configs under `configs/<task>/` are the ones we
+used, including checkpoint selection.
 
 Datasets go in `data/datasets_lerobot/<domain>/`, caches in `data/cache/<name>/`,
 run outputs in `outputs/`. You can equally run the whole pipeline on your own
