@@ -313,9 +313,10 @@ view-compression benchmark (`bench_tactile_view_compression.py`).
 
 ## Real-robot deployment
 
-**You are on the `deploy` branch.** It is `main` plus the policy servers,
-robot clients and operational docs under `web_infer_scripts/` and `docs/`.
-Install exactly as above.
+The policy servers, robot clients, and operational runbooks are available on the
+[`deploy`](https://github.com/dextacwam/DexTacWAM/tree/deploy) branch, which
+extends `main` with deployment-specific files under `web_infer_scripts/` and
+`docs/`. Installation is identical to the instructions above.
 
 Deployment is a server/client split. The policy server holds the world model and
 action expert on the GPU workstation; a thin client on the robot streams
@@ -359,9 +360,10 @@ python web_infer_scripts/robot_client_tactile_sharpa_dexmate.py \
     --host <SERVER_IP> --port 5008 --max-steps 400
 ```
 
-[`docs/rollout_runbook_right_only.md`](docs/rollout_runbook_right_only.md) is the
-step-by-step procedure including camera streamers and what to watch in the
-banner; [`docs/deploy_gates_right_only.md`](docs/deploy_gates_right_only.md)
+[`docs/rollout_runbook_right_only.md`](https://github.com/dextacwam/DexTacWAM/blob/deploy/docs/rollout_runbook_right_only.md)
+is the step-by-step procedure including camera streamers and what to watch in
+the banner;
+[`docs/deploy_gates_right_only.md`](https://github.com/dextacwam/DexTacWAM/blob/deploy/docs/deploy_gates_right_only.md)
 records the boot, dry-run, replay and byte-parity gates each policy passed.
 
 Hardware-specific pieces are named for our platform: `sharpa` is the fingertip
