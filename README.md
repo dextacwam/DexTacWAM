@@ -112,7 +112,8 @@ pretrained_models/dextacwam_tactile_encoder/model.pt
 ```
 
 `GE_base_fast_v0.1.safetensors` is distributed under the LTX-Video Open Weights
-License rather than Apache 2.0; check that it permits your use.
+License rather than Apache 2.0. Please review the applicable license terms
+before use.
 
 ## Checkpoints and data
 
@@ -140,10 +141,10 @@ The corpus it was trained on, and the six evaluation tasks:
 | [`DexTacWAM_wipe_whiteboard`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_wipe_whiteboard) | 99 | 57 GB | `configs/wipe_whiteboard/` | `data/datasets_lerobot/20260808_wipe_white_board` |
 | [`DexTacWAM_pick_place_cube`](https://huggingface.co/datasets/JensenYuan/DexTacWAM_pick_place_cube) | 100 | 13 GB | `configs/cube_place/` | `data/datasets_lerobot/20260809_pick_place_cube` |
 
-The last column matters: the configs address a corpus by its directory name, and
-the normalization statistics committed next to each config are keyed on that
-same name. Download into the path shown or edit `data_roots`, `domains`,
-`val_splits` and `stat_file` together.
+The last column gives the directory name each config expects. The configs
+address a corpus by that name, and the normalization statistics committed next
+to each config are keyed on it. Download into the path shown or edit
+`data_roots`, `domains`, `val_splits` and `stat_file` together.
 
 The 488-episode corpus covers 250 distinct instructions, so most tasks appear
 only once or twice. It is meant for tactile representation learning in stage 1;
@@ -158,7 +159,7 @@ encoder and the recipe: the configs under `configs/<task>/` are the ones we
 used, including checkpoint selection.
 
 Datasets go in `data/datasets_lerobot/<domain>/`, caches in `data/cache/<name>/`,
-run outputs in `outputs/`. You can equally run the whole pipeline on your own
+run outputs in `outputs/`. The full pipeline also runs on your own
 LeRobot-format corpus; see [Data preparation](#data-preparation) for the
 statistics you need to regenerate.
 
@@ -211,7 +212,8 @@ python scripts/preprocess_dex_vtam_cache.py \
 
 The three stages run in order; each one's output is the next one's warm start.
 After finishing a stage, point the next config at the run directory you just
-produced. The paths committed here are from our runs and will not exist for you.
+produced. The paths committed in the configs refer to our own runs and need to
+be updated accordingly.
 
 ### Recommended workflow for a new task
 
@@ -224,8 +226,9 @@ the two stage 1 runs below and the 282 GB corpus they need.
 In our experiments, roughly **30k stage 2 steps and 10k stage 3 steps** were
 typically sufficient to obtain a working policy from about 100 demonstrations
 per task. The committed configs run far longer (`train_steps: 1000000` and
-`50000`) because we let them run and selected checkpoints afterwards, so treat
-those values as upper bounds. Stop early and evaluate.
+`50000`) because we let them run and selected checkpoints afterwards. Treat
+these training steps as upper bounds rather than targets; evaluate intermediate
+checkpoints and stop once performance has converged.
 
 The rest of this section is the full recipe, for reproducing the paper. Stage 1
 is optional there too: the released encoder is the one our results were produced
